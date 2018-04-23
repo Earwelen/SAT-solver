@@ -1,10 +1,10 @@
 # #######################################################################################
-#  Sylvain Riondet
-# e0267895@u.nus.edu / sylvainriondet@gmail.com
-# 2018/05/12
-# National University of Singapore / SoC / CS4244 Kknowledge Based Systems
-# Professor Kuldeep S. Meel
-# Project : SAT solver
+#     Sylvain Riondet
+#         e0267895@u.nus.edu / sylvainriondet@gmail.com
+#         2018/05/12
+#         National University of Singapore / SoC / CS4244 Kknowledge Based Systems
+#         Professor Kuldeep S. Meel
+#         Project : SAT solver
 # #######################################################################################
 
 # #######################################################################################
@@ -18,7 +18,7 @@
 # imports
 import argparse
 import os
-import ui
+from ui import tracer
 
 
 # #######################################################################################
@@ -26,22 +26,24 @@ import ui
 PROFILER = False
 TRACE_LVL = 5
 
+
 # #######################################################################################
+# #############################      main function     ##################################
 def solver(formula):
-    print(format())
+    tracer(formula(), TRACE_LVL, 1)
 
 
 
 
 # ########################################################################################
-# ##############################      main function     ##################################
+# ###########################      main call, cmd line     ###############################
 if __name__ == '__main__':
 
     # Arguments for inline commands : https://docs.python.org/3/howto/argparse.html#id1
     cmd = argparse.ArgumentParser(
         "\n"
         "  Coded by Sylvain Riondet, @NUS/SoC \n"
-        "  sylvainriondet@gmail.com \n"
+        "  e0267895@u.nus.edu / sylvainriondet@gmail.com \n"
         "  Course: CS4244 - Knowledge-Based Systems\n"
         "  Submission for 2018/05/12 \n"
         "\n")
@@ -51,7 +53,7 @@ if __name__ == '__main__':
     input_formula = args.input_formula
     print("Hello, lets start ! Welcome to my SAT solver ! ... Sylvain")
 
-
+    #
     # #######################################################################################
     if PROFILER:
         # Checking processor time with cProfile lib#
