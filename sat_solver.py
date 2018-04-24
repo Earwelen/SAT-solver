@@ -19,6 +19,7 @@
 import argparse
 import os
 from ui import tracer
+from sat_classes import Term, Clause
 
 
 # #######################################################################################
@@ -28,11 +29,32 @@ TRACE_LVL = 5
 
 
 # #######################################################################################
+# #############################      parsing file      ##################################
+def text_parse_to_formula(text_file):
+    """ Parse .cnf file into terms and clauses """
+    formula = []
+    with open(text_file) as f:
+        for line in f:
+
+            formula.append()
+
+    return formula
+
+
+# #######################################################################################
 # #############################      main function     ##################################
 def solver(formula):
     tracer(formula(), TRACE_LVL, 1)
 
 
+# ########################################################################################
+# ##############################    Checking of args    ##################################
+def is_valid_file(parser, file_path):
+    if not os.path.isfile(file_path):
+        parser.error(f'\n The file {file_path} does not exist!')
+    else:
+        # File exists so return the filename
+        return file_path
 
 
 # ########################################################################################
@@ -47,11 +69,13 @@ if __name__ == '__main__':
         "  Course: CS4244 - Knowledge-Based Systems\n"
         "  Submission for 2018/05/12 \n"
         "\n")
-    cmd.add_argument("input_formula", help="Input formula to test",)  # type=lambda x: fonction_call(cmd, x))
+    cmd.add_argument("input_file", help="File with cnf formula",
+                     type=lambda x: is_valid_file(cmd, x))  # type=lambda x: fonction_call(cmd, x))
     args = cmd.parse_args()
-    # Arguments
-    input_formula = args.input_formula
+
+    # Parse the text file to formula
     print("Hello, lets start ! Welcome to my SAT solver ! ... Sylvain")
+    formula = text_parse_to_formula(args.input_file)
 
     #
     # #######################################################################################
