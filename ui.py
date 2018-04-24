@@ -46,15 +46,7 @@ def tracer(message, tracing_lvl=3, mess_priority=10, m_type="info", flush=False)
     if tracing_lvl is None or tracing_lvl < 0:
         tracing_lvl = 3
     if mess_priority <= tracing_lvl:
-        if isinstance(m.msg, str):
-            if Message.flush:
-                print(m.log_name, str("  " * m.priority + m.msg), sep=": ")
-            else:
-                print(m.parser_id, str("  " * m.priority + m.msg), sep=": ")
-        else:
-            if Message.flush: print(m.log_name, ": ")
-            else: print(m.parser_id, ": ")
-            pprint(message)
+        print("  " * m.priority + str(m.msg))
 
     # #################################################################################################################
     # Then if it's a special message, special behavior can happen
@@ -106,15 +98,6 @@ def tracer(message, tracing_lvl=3, mess_priority=10, m_type="info", flush=False)
         if os_path.isdir(os_path.dirname(message)):
             Message.csv_output = message
 
-    # ##########################################################################################
-    # Save the log file name
-    if m_type == "log_name":
-        Message.log_name = message
-    # ##########################################################################################
-    # save the directory of the log file
-    if m_type == "log_dir":
-        Message.log_dir = message
-
     # If flush option is enable, do it
     if flush: sys.stdout.flush()
 
@@ -144,7 +127,8 @@ class Message:
         Message.all_msg += [self]
 
     def __repr__(self):
-        return "{}\t:{} ".format(self.log_name, self.msg)
+        return str(self.msg)
+        # return "{}\t:{} ".format(self.log_name, self.msg)
 
     def verbose(self):
         return "{} : message n{:>5} at {:3.3}seconds, priority:{:>2}, {:7}: \n\t{} ".format(
