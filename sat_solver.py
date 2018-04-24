@@ -9,7 +9,6 @@
 
 # #######################################################################################
 # todo TODO List
-# todo check input
 # todo check output
 # todo do the sat solver
 # #######################################################################################
@@ -19,7 +18,7 @@
 import argparse
 import os
 from ui import tracer
-from sat_classes import Term, Clause
+from sat_classes import Term, Clause, Formula
 
 
 # #######################################################################################
@@ -27,24 +26,63 @@ from sat_classes import Term, Clause
 PROFILER = False
 TRACE_LVL = 5
 
+# formula Object with a list of Clauses composed of Terms
+formula = Formula()
+
 
 # #######################################################################################
 # #############################      parsing file      ##################################
 def text_parse_to_formula(text_file):
     """ Parse .cnf file into terms and clauses """
-    formula = []
     with open(text_file) as f:
         for line in f:
+            striped_line = line.strip()
 
-            formula.append()
+            # file name and empty line
+            if striped_line[0] == 'c':
+                tracer("don't care: " + striped_line, TRACE_LVL, 4)
 
-    return formula
+            # "p cnf <nb of terms> <nb of clauses>
+            elif striped_line[0] == 'p':
+                index = 0
+                for part in striped_line.split(" "):
+                    if part.isdigit():
+                        if index == 0:
+                            formula.nb_terms = int(part)
+                            formula.create_terms()
+                            tracer(f"formula should have {formula.nb_terms} different terms", TRACE_LVL, 4)
+                            tracer(formula.terms, TRACE_LVL, 5)
+                            index += 1
+                        elif index == 1:
+                            formula.nb_clauses = int(part)
+                            formula.create_clauses()
+                            tracer(f"formula should have {formula.nb_clauses} clauses", TRACE_LVL, 4)
+                            index += 1
+                        else:
+                            tracer("Error, there is a third number in the cnf file", TRACE_LVL, 0, m_type="error")
+
+            # Real clause. Decompose it
+            elif striped_line[0].isdigit():
+                # have each int
+                int_list = [int(x) for x in striped_line.split(" ")]
+                if int_list[-1] == 0:
+                    ind = int_list[0] - 1
+                    int_list = int_list[1:-1]        # drop last '0'
+                else:
+                    tracer("No '0' found at the end, error", TRACE_LVL, 1, m_type="error")
+
+                # now create each Term and pass into a clause
+                for x in int_list:
+                    formula.clauses[ind].terms.append(Term(abs(x), 1 if x >= 0 else -1))
+
+            else:
+                tracer("Hmmm weird shouldn't happen", TRACE_LVL, 1, m_type="warning")
 
 
 # #######################################################################################
 # #############################      main function     ##################################
-def solver(formula):
-    tracer(formula(), TRACE_LVL, 1)
+def solver():
+    tracer(formula, TRACE_LVL, 1)
 
 
 # ########################################################################################
@@ -75,7 +113,7 @@ if __name__ == '__main__':
 
     # Parse the text file to formula
     print("Hello, lets start ! Welcome to my SAT solver ! ... Sylvain")
-    formula = text_parse_to_formula(args.input_file)
+    text_parse_to_formula(args.input_file)
 
     #
     # #######################################################################################
@@ -84,7 +122,7 @@ if __name__ == '__main__':
         try:
             import cProfile
             import pstats
-            cProfile.run("solver(input_formula)", "cProfileStats")
+            cProfile.run("solver()", "cProfileStats")
             stats = pstats.Stats("cProfileStats")
             # Sort the stats and print the 10 first rows
             stats.sort_stats("tottime")
@@ -96,8 +134,10 @@ if __name__ == '__main__':
             os.remove("cProfileStats")
 
     else:
-        solver(input_formula)
+        solver()
 
+    # End
+    print("Bye bye see you next time ! \n")
 
 
 
