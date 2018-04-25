@@ -7,6 +7,8 @@
 #         Project : SAT solver
 # #######################################################################################
 
+# Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
+
 
 class Formula:
     """ CNF Formula: list of clauses """
@@ -18,7 +20,7 @@ class Formula:
         self.terms = []
 
     def create_terms(self):
-        self.terms = [Term(x) for x in range(self.nb_terms)]
+        self.terms = [Term(x) for x in range(1, self.nb_terms + 1)]
 
     def create_clauses(self):
         self.clauses = [Clause(x) for x in range(self.nb_clauses)]
@@ -40,27 +42,29 @@ class Clause:
         self.nb_clauses_count += 1
 
     def __repr__(self):
-        return f"* Clause {self.index + 1} with Terms: \n\t" + "\n\t".join([str(t) for t in self.terms])
+        return f"* Clause {self.index + 1} with Terms: \t(" + " v ".join([t.short_str() for t in self.terms]) + ")"
 
 
 class Term:
     """ Term, with an id (x1, x2, ...) and a sign (+1 or -1) """
     tot_nb_terms = 0    # total nb of terms
     nb_terms_count = 0
-    values = []
+    values = {}
 
     def __init__(self, x, sign=None):
+        Term.values[x] = None
         self.x = x
         self.sign = sign
+        self.val = Term.values[x]
         Term.tot_nb_terms += 1
 
+    def short_str(self):
+        if self.sign == 1:      return f"+x{self.x}"
+        elif self.sign == -1:   return f"-x{self.x}"
+        else:                   return f"x{self.x}"
+
     def __repr__(self):
-        if self.sign == 1:
-            return f"Term +{self.x}"
-        elif self.sign == -1:
-            return f"Term -{self.x}"
-        else:
-            return f"Term  {self.x}"
+        return f"Term {self.short_str()}, val={self.val}"
 
 
 
