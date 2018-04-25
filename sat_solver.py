@@ -34,7 +34,7 @@ from sat_classes import Term, Clause, Formula
 # #######################################################################################
 # Variables & constants
 PROFILER = False
-TRACE_LVL = 4
+TRACE_LVL = 2
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
@@ -107,7 +107,7 @@ def recursive_sat_check():
         found_x = formula.find_unique_terms()
         if found_x is None: break
 
-        tracer(f"Found Term {found_x} that has an unique possible value", TRACE_LVL, 2)
+        tracer(f"Found Term {found_x} that has an unique possible value \n", TRACE_LVL, 2)
         Term.values[found_x['x']] = found_x['val']
 
         iteration += 1
@@ -133,19 +133,24 @@ def solver():
     # todo find multiple solutions
     # todo eliminate possibilities already stuck in
 
-    for x in Term.values:
-        for tf in (True, False):
-            for again in Term.values:
-                print("until idk")
+    if False:
+        for x in Term.values:
+            for tf in (True, False):
+                for again in Term.values:
+                    print("until idk")
+
+    recursive_sat_check()
 
     #
     # Necessary to update the values of all Terms
     formula.reassign_terms_val()
     satisfiable = formula.satisfiable()
 
-    tracer(f"The formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
+    tracer(f"\nTerms = {Term.values}", TRACE_LVL, 1)
 
-    tracer("End of main function", TRACE_LVL, 1)
+    tracer(f"\nThe formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
+
+    tracer("\nEnd of main function\n", TRACE_LVL, 1)
 
 
 # ########################################################################################
