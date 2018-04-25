@@ -63,11 +63,12 @@ class Clause:
     def satisfiable(self):
         """ It is satisfiable if at least one Term is True """
         is_satis = [x.assigned_val() for x in self.terms]
-        tracer(f"Clause {str(self.index)} is satisfiable: {is_satis}", TRACE_LVL, 3)
-        return sum(is_satis) >= 1
+        clause_sat = sum(is_satis) >= 1
+        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {is_satis}", TRACE_LVL, 3)
+        return clause_sat
 
     def __repr__(self):
-        return f"* Clause {self.index + 1} with Terms: \t(" + " v ".join([t.short_str() for t in self.terms]) + ")"
+        return f"* Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
 
 
 class Term:
@@ -99,7 +100,7 @@ class Term:
         return self.neg == self.val
 
     def short_str(self):
-        if self.neg == -1:      return f"-x{self.x}"
+        if self.neg == False:   return f"-x{self.x}"
         else:                   return f"x{self.x}"
 
     def __repr__(self):
