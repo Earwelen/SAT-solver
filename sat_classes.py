@@ -8,16 +8,9 @@
 # #######################################################################################
 
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
-from operator import mul
-from functools import reduce
 from ui import tracer
 
 TRACE_LVL = 6
-
-
-def prod(iterable):
-    """ Return the product of all terms like sum() """
-    return reduce(mul, iterable, 1)
 
 
 class Formula:
@@ -29,6 +22,7 @@ class Formula:
         self.nb_clauses = 0
         self.clauses = []
         self.terms = []
+        self.solved = None
 
     def create_terms(self):
         self.terms = [Term(x) for x in range(1, self.nb_terms + 1)]
@@ -37,7 +31,23 @@ class Formula:
         self.clauses = [Clause(x) for x in range(self.nb_clauses)]
 
     def satisfiable(self):
-        return prod([x.satisfiable() for x in self.clauses])
+        clauses_satis = [x.satisfiable() for x in self.clauses]
+        if False in clauses_satis:
+            self.solved = False
+        elif None in clauses_satis:
+            self.solved = None
+        else:
+            tracer(f"Assume that if there's no False nor None in our formula, we only have True", TRACE_LVL, 4)
+            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 4)
+            self.solved = True
+        return self.solved
+
+    def find_unique_terms(self):
+        for clause in self.clauses:
+            found_x = clause.unique_term()
+            if found_x is not None:
+                return found_x
+        return None
 
     def reassign_terms_val(self):
         for clause in self.clauses:
@@ -101,10 +111,9 @@ class Clause:
             i_unique = self.terms_are_true.index(None)
             u_term = self.terms[i_unique]
             if u_term.neg is True:
-                return u_term.x, True
+                return {'x': u_term.x, 'val': True}
             else:
-                return u_term.x, False
-            return i_unique
+                return {'x': u_term.x, 'val': False}
         return None
 
     def __repr__(self):
