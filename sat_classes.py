@@ -63,7 +63,7 @@ class Clause:
         """
         self.index = Clause.nb_clauses_count
         self.terms = []
-        self.masks = []
+        self.terms_are_true = []
         self.satisfied = None
         self.nb_terms = None
         Clause.nb_clauses_count += 1
@@ -71,27 +71,41 @@ class Clause:
     def append_term(self, to_append):
         """ To have same number of terms and masks """
         self.terms.append(to_append)
-        self.masks.append(False)
+        self.terms_are_true.append(None)
         self.nb_terms = len(self.terms)
 
     def satisfiable(self):
-        """ It is satisfiable if at least one Term is True """
-        terms_are_true = [x.assigned_val() for x in self.terms]
-        if None in terms_are_true:
+        """
+        It is satisfiable if at least one Term is True
+        self.terms_are_true compute the evaluation of each term, True / False or None if no value yet
+        """
+        self.terms_are_true = [x.assigned_val() for x in self.terms]
+        if True in self.terms_are_true:
+            clause_sat = True
+        elif None in self.terms_are_true:
             clause_sat = None
         else:
-            clause_sat = sum(terms_are_true) >= 1
+            clause_sat = False
         self.satisfied = clause_sat
-        self.masks = [is_sat == True for is_sat in terms_are_true]
 
-        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {terms_are_true}", TRACE_LVL, 3)
+        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {self.terms_are_true}", TRACE_LVL, 3)
         return clause_sat
 
     def unique_term(self):
-        """ If there an unique term that is not True yet, only one value is possible to satisfy the Clause """
-        if self.satisfied in (False, None) and self.nb_terms - self.terms.count(False) == 1:
-            # so there is one Term that is not tru
-        return term
+        """ If there an unique term that is undefined, all others are False,
+        only one value is possible to satisfy the Clause
+        Return the value to assign to that x, knowing that it can be negative
+        """
+        if self.satisfied is None and self.terms_are_true.count(None) == 1:
+            # so there is only one Term that is None, all others are False
+            i_unique = self.terms_are_true.index(None)
+            u_term = self.terms[i_unique]
+            if u_term.neg is True:
+                return u_term.x, True
+            else:
+                return u_term.x, False
+            return i_unique
+        return None
 
     def __repr__(self):
         return f"* Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
