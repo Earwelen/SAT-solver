@@ -34,7 +34,7 @@ from sat_classes import Term, Clause, Formula
 # #######################################################################################
 # Variables & constants
 PROFILER = False
-TRACE_LVL = 5
+TRACE_LVL = 4
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
@@ -46,6 +46,7 @@ def text_parse_to_formula(text_file):
     """ Parse .cnf file into terms and clauses """
     with open(text_file) as f:
         for line in f:
+            if len(line) <= 1: continue
             striped_line = line.strip()
 
             # file name and empty line
@@ -61,7 +62,7 @@ def text_parse_to_formula(text_file):
                             formula.nb_terms = int(part)
                             formula.create_terms()
                             tracer(f"formula should have {formula.nb_terms} different terms", TRACE_LVL, 4)
-                            tracer(formula.terms, TRACE_LVL, 5)
+                            tracer(formula.terms, TRACE_LVL, 7)
                             index += 1
                         elif index == 1:
                             formula.nb_clauses = int(part)
@@ -100,13 +101,35 @@ def solver():
     # values = {1: True, 2: False, 3: False}
     # Term.values = values
 
-    for key in Term.values.keys():
-        Term.values[key] = False
+    # for key in Term.values.keys():
+    #     Term.values[key] = False
+
+    # todo check the unique_term and satisfiable for each Clause
+
+    found_x = True
+    iteration = 0
+    while found_x is not None:
+
+        unassigned_terms = 0
+        for k in Term.values.keys():
+            if Term.values[k] is None: unassigned_terms += 1
+        tracer(f"=> Iteration {iteration}: Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 1)
+
+        formula.reassign_terms_val()
+        formula.satisfiable()       # recheck all the clauses satisfiability
+
+        found_x = formula.find_unique_terms()
+        if found_x is None: break
+
+        tracer(f"Found Term {found_x} that has an unique possible value", TRACE_LVL, 2)
+        Term.values[found_x['x']] = found_x['val']
+
+        iteration += 1
 
     # Necessary to update the values of all Terms
     formula.reassign_terms_val()
-
     satisfiable = formula.satisfiable()
+
     tracer(f"The formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
 
     tracer("End of main function", TRACE_LVL, 1)
