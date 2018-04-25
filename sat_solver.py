@@ -71,7 +71,7 @@ def text_parse_to_formula(text_file):
                             tracer("Error, there is a third number in the cnf file", TRACE_LVL, 0, m_type="error")
 
             # Real clause. Decompose it
-            elif striped_line[0].isdigit():
+            elif striped_line.split()[0].lstrip("-").isdigit():
                 # have each int
                 int_list = [int(x) for x in striped_line.split(" ")]
                 if int_list[-1] == 0:
@@ -86,7 +86,7 @@ def text_parse_to_formula(text_file):
                 formula.clauses.append(clause)
 
             else:
-                tracer("Hmmm weird shouldn't happen", TRACE_LVL, 1, m_type="warning")
+                tracer(f"Hmmm {striped_line} was not recognized: {striped_line[0]}", TRACE_LVL, 1, m_type="warning")
 
 
 # #######################################################################################
@@ -97,8 +97,11 @@ def solver():
     # TEMPORARY Testing
     # 1 -3 0
     # 2 3 -1 0
-    values = {1: True, 2: False, 3: False}
-    Term.values = values
+    # values = {1: True, 2: False, 3: False}
+    # Term.values = values
+
+    for key in Term.values.keys():
+        Term.values[key] = False
     formula.reassign_terms_val()
 
     satisfiable = formula.satisfiable()
