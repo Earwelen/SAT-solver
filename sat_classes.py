@@ -10,7 +10,7 @@
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
 from ui import tracer
 
-TRACE_LVL = 6
+TRACE_LVL = 2
 
 
 class Formula:
@@ -98,7 +98,8 @@ class Clause:
             clause_sat = False
         self.satisfied = clause_sat
 
-        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {self.terms_are_true}", TRACE_LVL, 3)
+        tracer(f"Clause {str(self.index)} evaluates to {clause_sat}, details: {self.terms_are_true}, "
+               f"{[x.short_str() for x in self.terms]}", TRACE_LVL, 4)
         return clause_sat
 
     def unique_term(self):
@@ -139,7 +140,7 @@ class Term:
         # todo: this previous assignment is not a pointer.  Therefore the value is stored and not updated
         Term.tot_nb_terms += 1
 
-    def count_unassigned(self):
+    def count_unassigned():
         unassigned_terms = 0
         for k in Term.values.keys():
             if Term.values[k] is None: unassigned_terms += 1
@@ -151,7 +152,7 @@ class Term:
     def assigned_val(self):
         """ Compute the value when required, neg * val """
         # assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
-        tracer(f"Term: {str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
+        tracer(f"{str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
 
         # make use of Python True==1 and False ==0, to apply the negation easily
         if self.val is None:    return None
