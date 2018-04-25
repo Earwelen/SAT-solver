@@ -12,6 +12,7 @@
 # todo brut force search
 # todo check output
 # todo do the sat solver
+# todo general variable with values of terms, easy to change for all. In Formula or in Term class ?
 #
 # call prog with => python sat_solver.py "cnf_formulas/cnf-1.cnf"
 #
@@ -64,7 +65,6 @@ def text_parse_to_formula(text_file):
                             index += 1
                         elif index == 1:
                             formula.nb_clauses = int(part)
-                            formula.create_clauses()
                             tracer(f"formula should have {formula.nb_clauses} clauses", TRACE_LVL, 4)
                             index += 1
                         else:
@@ -75,14 +75,15 @@ def text_parse_to_formula(text_file):
                 # have each int
                 int_list = [int(x) for x in striped_line.split(" ")]
                 if int_list[-1] == 0:
-                    ind = int_list[0] - 1
-                    int_list = int_list[1:-1]        # drop last '0'
+                    int_list = int_list[:-1]        # drop last '0'
                 else:
                     tracer("No '0' found at the end, error", TRACE_LVL, 1, m_type="error")
 
                 # now create each Term and pass into a clause
+                clause = Clause()
                 for x in int_list:
-                    formula.clauses[ind].terms.append(Term(abs(x), 1 if x >= 0 else -1))
+                    clause.terms.append(Term(abs(x), 1 if x >= 0 else -1))
+                formula.clauses.append(clause)
 
             else:
                 tracer("Hmmm weird shouldn't happen", TRACE_LVL, 1, m_type="warning")
@@ -93,12 +94,24 @@ def text_parse_to_formula(text_file):
 def solver():
     tracer(formula, TRACE_LVL, 1)
 
+    # 1 -3 0
+    # 2 3 -1 0
+    values = {1: False, 2: False, 3: False}
+    Formula.terms_values = values
+    tracer(Term.values, TRACE_LVL, 1)
+    tracer(formula.clauses[0].terms, TRACE_LVL, 1)
+
+    satisfiable = formula.satisfiable()
+    tracer(f"The formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
+
+    tracer("End of main function", TRACE_LVL, 1)
+
 
 # ########################################################################################
 # ##############################    Checking of args    ##################################
 def is_valid_file(parser, file_path):
-    if not os.path.isfile(file_path):
-        parser.error(f'\n The file {file_path} does not exist!')
+    if not os.path.isfile(file_path) and (file_path.endswith(".cnf") or file_path.endswith(".txt")):
+        parser.error(f'\n The file {file_path} does not exist or the extension is wrong(.cnf/.txt)!')
     else:
         # File exists so return the filename
         return file_path
