@@ -10,6 +10,9 @@
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
 from operator import mul
 from functools import reduce
+from ui import tracer
+
+TRACE_LVL = 6
 
 
 def prod(iterable):
@@ -36,6 +39,11 @@ class Formula:
     def satisfiable(self):
         return prod([x.satisfiable() for x in self.clauses])
 
+    def reassign_terms_val(self):
+        for clause in self.clauses:
+            for term in clause.terms:
+                term.reassign_val()
+
     def __repr__(self):
         return f"Formula consists of the following list of clauses: \n" + "\n".join([str(c) for c in self.clauses])
 
@@ -54,29 +62,40 @@ class Clause:
 
     def satisfiable(self):
         """ It is satisfiable if at least one Term is True """
-        return sum([x.assigned_val() for x in self.terms]) >= 1
+        is_satis = [x.assigned_val() for x in self.terms]
+        tracer(f"Clause {str(self.index)} is satisfiable: {is_satis}", TRACE_LVL, 3)
+        return sum(is_satis) >= 1
 
     def __repr__(self):
         return f"* Clause {self.index + 1} with Terms: \t(" + " v ".join([t.short_str() for t in self.terms]) + ")"
 
 
 class Term:
-    """ Term, with an id (x1, x2, ...) and a sign (+1 or -1) """
+    """ Term, with an id (x1, x2, ...), neg T/F, and a value 0 or 1 """
     tot_nb_terms = 0    # total nb of terms
     nb_terms_count = 0
     values = {}
 
     def __init__(self, x, neg=True):
-        Formula.terms_values[x] = None
+        """
+        Create a Term
+        :param x: x1, x2, x3 : id of the term
+        :param neg: !! True if positive, False if need negation !!
+        """
+        Term.values[x] = None
         self.x = x
         self.neg = neg
-        self.val = Formula.terms_values[x]
+        self.val = Term.values[x]
         Term.tot_nb_terms += 1
+
+    def reassign_val(self):
+        self.val = Term.values[self.x]
 
     def assigned_val(self):
         """ Compute the value when required, neg * val """
         assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
         # make use of Python True==1 and False ==0, to apply the negation easily
+        tracer(f"Term: {str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
         return self.neg == self.val
 
     def short_str(self):
