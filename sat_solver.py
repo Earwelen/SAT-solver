@@ -82,7 +82,7 @@ def text_parse_to_formula(text_file):
                 # now create each Term and pass into a clause
                 clause = Clause()
                 for x in int_list:
-                    clause.terms.append(Term(abs(x), True if x >= 0 else False))
+                    clause.append_term(Term(abs(x), True if x >= 0 else False))
                 formula.clauses.append(clause)
 
             else:
@@ -102,6 +102,8 @@ def solver():
 
     for key in Term.values.keys():
         Term.values[key] = False
+
+    # Necessary to update the values of all Terms
     formula.reassign_terms_val()
 
     satisfiable = formula.satisfiable()
