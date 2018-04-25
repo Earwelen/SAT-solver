@@ -91,28 +91,14 @@ def text_parse_to_formula(text_file):
 
 
 # #######################################################################################
-# #############################      main function     ##################################
-def solver():
-    tracer(formula, TRACE_LVL, 1)
-
-    # TEMPORARY Testing
-    # 1 -3 0
-    # 2 3 -1 0
-    # values = {1: True, 2: False, 3: False}
-    # Term.values = values
-
-    # for key in Term.values.keys():
-    #     Term.values[key] = False
-
-    # todo check the unique_term and satisfiable for each Clause
+# #################      Recursive checking of satisfiability     #######################
+def recursive_sat_check():
 
     found_x = True
     iteration = 0
     while found_x is not None:
 
-        unassigned_terms = 0
-        for k in Term.values.keys():
-            if Term.values[k] is None: unassigned_terms += 1
+        unassigned_terms = Term.count_unassigned()
         tracer(f"=> Iteration {iteration}: Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 1)
 
         formula.reassign_terms_val()
@@ -126,6 +112,33 @@ def solver():
 
         iteration += 1
 
+    return formula.solved
+
+
+# #######################################################################################
+# #############################      main function     ##################################
+def solver():
+    tracer(formula, TRACE_LVL, 1)
+
+    # TEMPORARY Testing
+    # 1 -3 0
+    # 2 3 -1 0
+    # values = {1: True, 2: False, 3: False}
+    # Term.values = values
+
+    # for key in Term.values.keys():
+    #     Term.values[key] = False
+
+    # todo recursive checking of possibilities
+    # todo find multiple solutions
+    # todo eliminate possibilities already stuck in
+
+    for x in Term.values:
+        for tf in (True, False):
+            for again in Term.values:
+                print("until idk")
+
+    #
     # Necessary to update the values of all Terms
     formula.reassign_terms_val()
     satisfiable = formula.satisfiable()
