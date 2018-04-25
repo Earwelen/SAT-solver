@@ -139,6 +139,12 @@ class Term:
         # todo: this previous assignment is not a pointer.  Therefore the value is stored and not updated
         Term.tot_nb_terms += 1
 
+    def count_unassigned(self):
+        unassigned_terms = 0
+        for k in Term.values.keys():
+            if Term.values[k] is None: unassigned_terms += 1
+        return unassigned_terms
+
     def reassign_val(self):
         self.val = Term.values[self.x]
 
