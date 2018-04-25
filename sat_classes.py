@@ -56,16 +56,42 @@ class Clause:
     nb_clauses_count = 0
 
     def __init__(self, ):
+        """
+        A Clause consists of Terms, stored in self.terms
+        the masks enable to mask the terms that are already evaluating to true.
+        if the whole Clause is satisfiable, the self.satisfied == True
+        """
         self.index = Clause.nb_clauses_count
         self.terms = []
+        self.masks = []
+        self.satisfied = None
+        self.nb_terms = None
         Clause.nb_clauses_count += 1
+
+    def append_term(self, to_append):
+        """ To have same number of terms and masks """
+        self.terms.append(to_append)
+        self.masks.append(False)
+        self.nb_terms = len(self.terms)
 
     def satisfiable(self):
         """ It is satisfiable if at least one Term is True """
-        is_satis = [x.assigned_val() for x in self.terms]
-        clause_sat = sum(is_satis) >= 1
-        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {is_satis}", TRACE_LVL, 3)
+        terms_are_true = [x.assigned_val() for x in self.terms]
+        if None in terms_are_true:
+            clause_sat = None
+        else:
+            clause_sat = sum(terms_are_true) >= 1
+        self.satisfied = clause_sat
+        self.masks = [is_sat == True for is_sat in terms_are_true]
+
+        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {terms_are_true}", TRACE_LVL, 3)
         return clause_sat
+
+    def unique_term(self):
+        """ If there an unique term that is not True yet, only one value is possible to satisfy the Clause """
+        if self.satisfied in (False, None) and self.nb_terms - self.terms.count(False) == 1:
+            # so there is one Term that is not tru
+        return term
 
     def __repr__(self):
         return f"* Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
@@ -87,6 +113,7 @@ class Term:
         self.x = x
         self.neg = neg
         self.val = Term.values[x]
+        # todo: this previous assignment is not a pointer.  Therefore the value is stored and not updated
         Term.tot_nb_terms += 1
 
     def reassign_val(self):
@@ -94,14 +121,16 @@ class Term:
 
     def assigned_val(self):
         """ Compute the value when required, neg * val """
-        assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
-        # make use of Python True==1 and False ==0, to apply the negation easily
+        # assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
         tracer(f"Term: {str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
-        return self.neg == self.val
+
+        # make use of Python True==1 and False ==0, to apply the negation easily
+        if self.val is None:    return None
+        else:                   return self.neg == self.val
 
     def short_str(self):
         if self.neg == False:   return f"-x{self.x}"
-        else:                   return f"x{self.x}"
+        else:                   return f" x{self.x}"
 
     def __repr__(self):
         return f"Term {self.short_str()}, val={self.val}"
