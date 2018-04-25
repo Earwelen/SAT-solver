@@ -8,10 +8,18 @@
 # #######################################################################################
 
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
+from operator import mul
+from functools import reduce
+
+
+def prod(iterable):
+    """ Return the product of all terms like sum() """
+    return reduce(mul, iterable, 1)
 
 
 class Formula:
     """ CNF Formula: list of clauses """
+    terms_values = {}
 
     def __init__(self):
         self.nb_terms = 0
@@ -25,6 +33,9 @@ class Formula:
     def create_clauses(self):
         self.clauses = [Clause(x) for x in range(self.nb_clauses)]
 
+    def satisfiable(self):
+        return prod([x.satisfiable() for x in self.clauses])
+
     def __repr__(self):
         return f"Formula consists of the following list of clauses: \n" + "\n".join([str(c) for c in self.clauses])
 
@@ -36,10 +47,14 @@ class Clause:
     """
     nb_clauses_count = 0
 
-    def __init__(self, index):
-        self.index = index
+    def __init__(self, ):
+        self.index = Clause.nb_clauses_count
         self.terms = []
-        self.nb_clauses_count += 1
+        Clause.nb_clauses_count += 1
+
+    def satisfiable(self):
+        """ It is satisfiable if at least one Term is True """
+        return sum([x.assigned_val() for x in self.terms]) >= 1
 
     def __repr__(self):
         return f"* Clause {self.index + 1} with Terms: \t(" + " v ".join([t.short_str() for t in self.terms]) + ")"
@@ -51,16 +66,21 @@ class Term:
     nb_terms_count = 0
     values = {}
 
-    def __init__(self, x, sign=None):
-        Term.values[x] = None
+    def __init__(self, x, neg=True):
+        Formula.terms_values[x] = None
         self.x = x
-        self.sign = sign
-        self.val = Term.values[x]
+        self.neg = neg
+        self.val = Formula.terms_values[x]
         Term.tot_nb_terms += 1
 
+    def assigned_val(self):
+        """ Compute the value when required, neg * val """
+        assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
+        # make use of Python True==1 and False ==0, to apply the negation easily
+        return self.neg == self.val
+
     def short_str(self):
-        if self.sign == 1:      return f"+x{self.x}"
-        elif self.sign == -1:   return f"-x{self.x}"
+        if self.neg == -1:      return f"-x{self.x}"
         else:                   return f"x{self.x}"
 
     def __repr__(self):
