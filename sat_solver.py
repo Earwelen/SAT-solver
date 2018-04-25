@@ -2,7 +2,7 @@
 #     Sylvain Riondet
 #         e0267895@u.nus.edu / sylvainriondet@gmail.com
 #         2018/05/12
-#         National University of Singapore / SoC / CS4244 Kknowledge Based Systems
+#         National University of Singapore / SoC / CS4244 Knowledge Based Systems
 #         Professor Kuldeep S. Meel
 #         Project : SAT solver
 # #######################################################################################
@@ -82,7 +82,7 @@ def text_parse_to_formula(text_file):
                 # now create each Term and pass into a clause
                 clause = Clause()
                 for x in int_list:
-                    clause.terms.append(Term(abs(x), 1 if x >= 0 else -1))
+                    clause.terms.append(Term(abs(x), True if x >= 0 else False))
                 formula.clauses.append(clause)
 
             else:
@@ -94,12 +94,12 @@ def text_parse_to_formula(text_file):
 def solver():
     tracer(formula, TRACE_LVL, 1)
 
+    # TEMPORARY Testing
     # 1 -3 0
     # 2 3 -1 0
-    values = {1: False, 2: False, 3: False}
-    Formula.terms_values = values
-    tracer(Term.values, TRACE_LVL, 1)
-    tracer(formula.clauses[0].terms, TRACE_LVL, 1)
+    values = {1: True, 2: False, 3: False}
+    Term.values = values
+    formula.reassign_terms_val()
 
     satisfiable = formula.satisfiable()
     tracer(f"The formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
