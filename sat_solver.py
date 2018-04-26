@@ -33,7 +33,6 @@ from sat_classes import Term, Clause, Formula
 
 # #######################################################################################
 # Variables & constants
-PROFILER = False
 TRACE_LVL = 2
 
 # formula Object with a list of Clauses composed of Terms
@@ -126,12 +125,18 @@ def solver():
     # values = {1: True, 2: False, 3: False}
     # Term.values = values
 
-    # for key in Term.values.keys():
-    #     Term.values[key] = False
+    # todo Simplify formula by identifying almost duplicates
 
     # todo recursive checking of possibilities
     # todo find multiple solutions
     # todo eliminate possibilities already stuck in
+
+    # todo create current_choice
+    # todo create choices_good, choices_bad
+    # todo still_unexplored_solutions()?
+    # todo make_choice()
+    # todo if formula == True / False / None => decide
+    # todo while loop
 
     if False:
         for x in Term.values:
@@ -177,6 +182,7 @@ if __name__ == '__main__':
         "\n")
     cmd.add_argument("input_file", help="File with cnf formula",
                      type=lambda x: is_valid_file(cmd, x))  # type=lambda x: fonction_call(cmd, x))
+    cmd.add_argument("-p", "--profiler", help="Activate the profiler", action='store_true', default=False)
     args = cmd.parse_args()
 
     # Parse the text file to formula
@@ -185,7 +191,7 @@ if __name__ == '__main__':
 
     #
     # #######################################################################################
-    if PROFILER:
+    if args.profiler:
         # Checking processor time with cProfile lib#
         try:
             import cProfile
