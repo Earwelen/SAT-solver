@@ -92,10 +92,16 @@ def text_parse_to_formula(text_file):
 # #######################################################################################
 # #################      Recursive checking of satisfiability     #######################
 def recursive_sat_check():
+    """
+    Recursively check if the formula is satisfiable, and auto assign terms that only have one possibility
+    :return: Returns if the formula is satisfiable: True/False/None
+    """
 
     found_x = True
     iteration = 0
+
     while found_x is not None:
+        # todo might need to move the solution from Term.values to another variable
 
         unassigned_terms = Term.count_unassigned()
         tracer(f"=> Iteration {iteration}: Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 1)
@@ -117,6 +123,7 @@ def recursive_sat_check():
 # #######################################################################################
 # #############################      main function     ##################################
 def solver():
+    """ Main function to solve the SAT pb. Most of the computation is into the objects """
     tracer(formula, TRACE_LVL, 1)
 
     # TEMPORARY Testing
@@ -144,17 +151,12 @@ def solver():
                 for again in Term.values:
                     print("until idk")
 
-    recursive_sat_check()
+    # Simple solving if no need for guess or reduction
+    satisfiable = recursive_sat_check()
 
-    #
-    # Necessary to update the values of all Terms
-    formula.reassign_terms_val()
-    satisfiable = formula.satisfiable()
-
+    # End of the Solver
     tracer(f"\nTerms = {Term.values}", TRACE_LVL, 1)
-
     tracer(f"\nThe formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
-
     tracer("\nEnd of main function\n", TRACE_LVL, 1)
 
 
