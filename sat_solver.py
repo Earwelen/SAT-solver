@@ -37,7 +37,7 @@ from sat_classes import Term, Clause, Formula
 
 # #######################################################################################
 # Variables & constants
-TRACE_LVL = 6
+TRACE_LVL = 1
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
@@ -101,6 +101,14 @@ def text_parse_to_formula(text_file):
 
 
 # #######################################################################################
+# #################                  Sort solutions               #######################
+def sort_sol():
+    # todo
+    global sol
+    solutions = []
+
+
+# #######################################################################################
 # #################      Recursive checking of satisfiability     #######################
 def recursive_sat_check():
     """
@@ -138,42 +146,28 @@ def recursive_sat_check():
 
 
 # #######################################################################################
-# #################            choose a value to fix            #########################
-def choose_term(depth_i):
-    """
-
-    :return:
-    """
-    values_proposition = sol[depth_i - 1][2]
-    while values_proposition in sol[:][2]:
-
-        values_proposition.index(None)
-    x_index = 0
-    return x_index
-
-
-# #######################################################################################
 # #################      recursively choose values of terms     #########################
 def generate_combinations(init_dict):
     nb_unassigned = Term.count_unassigned()
-    nb_terms = Term.tot_nb_terms
     return_list = []
-    all_combinations = itertools.product((True, False), repeat=nb_unassigned)
-    print(all_combinations)
+    all_combinations = list(itertools.product((True, False), repeat=nb_unassigned))
     none_indexes = Term.x_are_none()
-    print("none indexes = ", none_indexes)
 
-    # todo stucked in these combinations since a while
     for combi in all_combinations:
-        print(combi)
-        tmp = init_dict.copy()
+        tmp = init_dict['values'].copy()
         for i in range(len(combi)):
-            tmp['values'][none_indexes[i]] = combi[i]
-        return_list.append(tmp.copy())
-        print(return_list)
-    print("returning.... : ")
-    print(return_list)
-    return return_list
+            tmp[none_indexes[i]] = combi[i]
+        return_list.append({'solved': init_dict['solved'], 'values': tmp.copy()})
+    tracer(f"returning combination of possibilities : {return_list}", TRACE_LVL, 5)
+
+    for new_combi in return_list:
+        add = True
+        for ref in sol:
+            if ref == new_combi:
+                add = False
+                break
+        if add:
+            sol.append(new_combi)
 
 
 # #######################################################################################
@@ -211,7 +205,7 @@ def rec_try_values(i_explored):
             was_done = []
             tracer("C'mon fix that", TRACE_LVL, 0)
             tracer(f"\t\t\t\t\t\t\t{Term.values}", TRACE_LVL, 0)
-            pprint(sol)
+            # pprint(sol)
             for explored_values in sol:
                 was_done.append(True if Term.values == explored_values['values'] else False)
             # tracer(f"**** was_done = {was_done}", TRACE_LVL, 6)
@@ -225,7 +219,7 @@ def rec_try_values(i_explored):
                 tracer(f"* So it's solved={formula.solved}, adding to solutions (len(sol)={len(sol)}). "
                        f"Term.values = {Term.values}", TRACE_LVL, 4)
                 # Add the solution to the global variable
-                sol.extend(generate_combinations({'solved': formula.solved, 'values': Term.values.copy()}))
+                generate_combinations({'solved': formula.solved, 'values': Term.values.copy()})
             else:
                 depth_n += 1
                 tracer(f"Not solved. Let's go deeper, to depth_n={depth_n}. Term.values = {Term.values}, "
@@ -245,24 +239,10 @@ def solver(set_trace):
     TRACE_LVL = set_trace
     tracer(formula, TRACE_LVL, 1)
 
-    # TEMPORARY Testing
-    # 1 -3 0
-    # 2 3 -1 0
-    # values = {1: True, 2: False, 3: False}
-    # Term.values = values
-
     # todo Simplify formula by identifying almost duplicates clauses
 
-    # todo recursive checking of possibilities
-    # todo find multiple solutions
     # todo eliminate possibilities already stuck in
-
-    # todo create current_choice
     # todo create choices_good, choices_bad
-    # todo still_unexplored_solutions()?
-    # todo make_choice()
-    # todo if formula == True / False / None => decide
-    # todo while loop
 
     # todo if need deep recursion
     if False:
@@ -271,16 +251,16 @@ def solver(set_trace):
 
     # Initial check for obvious solutions
     recursive_sat_check()
-    # initial_terms = [formula.solved] + Term.values
-    # sol[0] hold the initial values, those that can't be changed (too constrained)
     sol.append({'solved': formula.solved, 'values': Term.values.copy()})
 
+    # Launch the resolution
     rec_try_values([])
 
     # End of the Solver
+    # sort_sol()
     tracer(f"\n{formula} \n", TRACE_LVL, 0)
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
-    pprint(sol)
+    pprint([s for s in sol if s['solved'] is True])
     formula_satisfiable = sum([for_sat['solved'] is True for for_sat in sol])
     tracer(f"\nThe formula is satisfiable: {formula_satisfiable} solutions", TRACE_LVL, 0)
     tracer("\nEnd of main function\n", TRACE_LVL, 1)
@@ -312,7 +292,7 @@ if __name__ == '__main__':
                      type=lambda x: is_valid_file(cmd, x))  # type=lambda x: fonction_call(cmd, x))
     cmd.add_argument("-p", "--profiler", help="Activate the profiler", action='store_true', default=False)
     cmd.add_argument("-v", "--verbosity", help="Verbosity level, 0 (no comments), to 10 (lots of details)",
-                     type=int, default=7, choices=[i for i in range(10+1)])
+                     type=int, default=0, choices=[i for i in range(10+1)])
     args = cmd.parse_args()
 
     # Parse the text file to formula
