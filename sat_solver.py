@@ -27,13 +27,17 @@
 # imports
 import argparse
 import os
+from pprint import pprint
+
+import itertools
+
 from ui import tracer
 from sat_classes import Term, Clause, Formula
 
 
 # #######################################################################################
 # Variables & constants
-TRACE_LVL = 2
+TRACE_LVL = 6
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
@@ -41,7 +45,8 @@ formula = Formula()
 #               Dim 1: 0-Choice/1-Implied/2-Final values,
 #               Dim 2: [formula.solved] + x[1..n]
 # todo This list of list of list will grow exponential. Might need to find a better solution here
-sol = [[[]]]
+sol = []
+explored = []
 depth_n = 1
 
 
@@ -110,22 +115,26 @@ def recursive_sat_check():
         # todo might need to move the solution from Term.values to another variable
 
         unassigned_terms = Term.count_unassigned()
-        tracer(f"=> Iteration {iteration}: Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 1)
+        tracer(f"satisfiability check iteration {iteration}: "
+               f"Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 1)
 
-        formula.reassign_terms_val()
         formula.satisfiable()       # recheck all the clauses satisfiability
-
         implied_x = formula.find_unique_terms()
-        if implied_x is None: break
+
+        if implied_x is None:
+            break
+        else:
+            formula.satisfiable()       # recheck all the clauses satisfiability
+
         # else:
-        tracer(f"Found Term {implied_x} that has an unique possible value \n", TRACE_LVL, 2)
+        tracer(f"Found Term {implied_x} that has an unique possible value", TRACE_LVL, 3)
         for k_v in implied_x:
             Term.values[k_v['x']] = k_v['val']
             # todo add to implied_list as well
 
         iteration += 1
 
-    return formula.solved
+    return implied_x
 
 
 # #######################################################################################
@@ -145,40 +154,95 @@ def choose_term(depth_i):
 
 # #######################################################################################
 # #################      recursively choose values of terms     #########################
-def rec_try_values(n, i_explored):
+def generate_combinations(init_dict):
+    nb_unassigned = Term.count_unassigned()
+    nb_terms = Term.tot_nb_terms
+    return_list = []
+    all_combinations = itertools.product((True, False), repeat=nb_unassigned)
+    print(all_combinations)
+    none_indexes = Term.x_are_none()
+    print("none indexes = ", none_indexes)
+
+    # todo stucked in these combinations since a while
+    for combi in all_combinations:
+        print(combi)
+        tmp = init_dict.copy()
+        for i in range(len(combi)):
+            tmp['values'][none_indexes[i]] = combi[i]
+        return_list.append(tmp.copy())
+        print(return_list)
+    print("returning.... : ")
+    print(return_list)
+    return return_list
+
+
+# #######################################################################################
+# #################      recursively choose values of terms     #########################
+def rec_try_values(i_explored):
     """
     choose a value of an unconstrained term and check satisfiability of the formula.
     if still neither True or False, recursively choose more terms
     """
-    tracer(f"Iteration {depth_n}. Making a guess", TRACE_LVL, 0)
+    global depth_n
+    tracer(f"=> Depth {depth_n}. Making a guess, i_explored={i_explored}", TRACE_LVL, 0)
 
-    for x in range():
-        pass
+    for x in Term.values.keys():
+        # Save previous values to reset to previous state at the end
+        previous_values = Term.values.copy()
+        formula.reassign_terms_val()
 
-    no_new_solution = False
-    if no_new_solution:
-        return
-    else:
-        print(f"potato {depth_n}")
-        depth_n += 1
+        tracer(f"--> Depth {depth_n}, x{x}. looping", TRACE_LVL, 2)
+        # Value already assigned, guess no need. Maybe need to record somehow ?
+        if Term.values[x] is not None:
+            tracer(f"Term x[{x}]={Term.values[x]}, continuing", TRACE_LVL, 6)
+            continue
+        # this x has already been decided in another previous loop
+        if x in i_explored:
+            continue
 
-    # Choose a None term
+        tracer(f"we deal with x={x} ", TRACE_LVL, 1)
 
-    # Assign it
+        for true_false in (True, False):
+            Term.values[x] = true_false
+            formula.reassign_terms_val()
+            tracer(f"Let's chose x{x}={true_false}. Term.values = {Term.values}", TRACE_LVL, 4)
 
-    # Recompute satisfiability
-    formula.satisfiable()
-    # Go deeper in choices
-    if formula.solved is None:
-        rec_try_values()
-    else:
-        add_solution()
+            # Check that we didn't already search this set of values
+            was_done = []
+            tracer("C'mon fix that", TRACE_LVL, 0)
+            tracer(f"\t\t\t\t\t\t\t{Term.values}", TRACE_LVL, 0)
+            pprint(sol)
+            for explored_values in sol:
+                was_done.append(True if Term.values == explored_values['values'] else False)
+            # tracer(f"**** was_done = {was_done}", TRACE_LVL, 6)
+            if sum(was_done) >= 1:
+                tracer(f"**** Has already been tried in previous loops {Term.values}", TRACE_LVL, 5)
+                continue
+
+            # Then alright, let's apply it
+            implied_x = recursive_sat_check()
+            if formula.solved in (True, False):
+                tracer(f"* So it's solved={formula.solved}, adding to solutions (len(sol)={len(sol)}). "
+                       f"Term.values = {Term.values}", TRACE_LVL, 4)
+                # Add the solution to the global variable
+                sol.extend(generate_combinations({'solved': formula.solved, 'values': Term.values.copy()}))
+            else:
+                depth_n += 1
+                tracer(f"Not solved. Let's go deeper, to depth_n={depth_n}. Term.values = {Term.values}, "
+                       f"i_explored = {[x] + i_explored}", TRACE_LVL, 4)
+                rec_try_values([x] + i_explored)
+                depth_n -= 1
+
+        Term.values = previous_values
+        formula.reassign_terms_val()
 
 
 # #######################################################################################
 # #############################      main function     ##################################
-def solver():
+def solver(set_trace):
     """ Main function to solve the SAT pb. Most of the computation is into the objects """
+    global TRACE_LVL
+    TRACE_LVL = set_trace
     tracer(formula, TRACE_LVL, 1)
 
     # TEMPORARY Testing
@@ -205,24 +269,20 @@ def solver():
         import sys
         sys.setrecursionlimit(5000)
 
-    if False:
-        for x in Term.values:
-            for tf in (True, False):
-                for again in Term.values:
-                    print("until idk")
-
     # Initial check for obvious solutions
     recursive_sat_check()
     # initial_terms = [formula.solved] + Term.values
     # sol[0] hold the initial values, those that can't be changed (too constrained)
-    # sol.append([initial_terms, initial_terms, initial_terms])
+    sol.append({'solved': formula.solved, 'values': Term.values.copy()})
 
-    # rec_try_values()
-    print(Term.tot_nb_terms)
+    rec_try_values([])
 
     # End of the Solver
-    tracer(f"\nTerms = {Term.values}", TRACE_LVL, 1)
-    tracer(f"\nThe formula is satisfiable: {formula.solved}", TRACE_LVL, 0)
+    tracer(f"\n{formula} \n", TRACE_LVL, 0)
+    tracer(f"\nSolutions : \n", TRACE_LVL, 0)
+    pprint(sol)
+    formula_satisfiable = sum([for_sat['solved'] is True for for_sat in sol])
+    tracer(f"\nThe formula is satisfiable: {formula_satisfiable} solutions", TRACE_LVL, 0)
     tracer("\nEnd of main function\n", TRACE_LVL, 1)
 
 
@@ -251,6 +311,8 @@ if __name__ == '__main__':
     cmd.add_argument("input_file", help="File with cnf formula",
                      type=lambda x: is_valid_file(cmd, x))  # type=lambda x: fonction_call(cmd, x))
     cmd.add_argument("-p", "--profiler", help="Activate the profiler", action='store_true', default=False)
+    cmd.add_argument("-v", "--verbosity", help="Verbosity level, 0 (no comments), to 10 (lots of details)",
+                     type=int, default=7, choices=[i for i in range(10+1)])
     args = cmd.parse_args()
 
     # Parse the text file to formula
@@ -264,7 +326,7 @@ if __name__ == '__main__':
         try:
             import cProfile
             import pstats
-            cProfile.run("solver()", "cProfileStats")
+            cProfile.run("solver(args.verbosity)", "cProfileStats")
             stats = pstats.Stats("cProfileStats")
             # Sort the stats and print the 10 first rows
             stats.sort_stats("tottime")
@@ -276,7 +338,7 @@ if __name__ == '__main__':
             os.remove("cProfileStats")
 
     else:
-        solver()
+        solver(args.verbosity)
 
     # End
     print("Bye bye see you next time ! \n")
