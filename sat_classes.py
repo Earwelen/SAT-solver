@@ -10,7 +10,7 @@
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
 from ui import tracer
 
-TRACE_LVL = 2
+TRACE_LVL = 5
 
 
 class Formula:
@@ -31,14 +31,14 @@ class Formula:
         self.clauses = [Clause(x) for x in range(self.nb_clauses)]
 
     def satisfiable(self):
-        clauses_satis = [x.satisfiable() for x in self.clauses]
+        self.reassign_terms_val()
+        clauses_satis = [clause.satisfiable() for clause in self.clauses]
         if False in clauses_satis:
             self.solved = False
         elif None in clauses_satis:
             self.solved = None
         else:
-            tracer(f"Assume that if there's no False nor None in our formula, we only have True", TRACE_LVL, 4)
-            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 4)
+            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 3)
             self.solved = True
         return self.solved
 
@@ -58,6 +58,7 @@ class Formula:
             return None
 
     def reassign_terms_val(self):
+        """Update the value of each of the Term objects, from the class variable Term.values"""
         for clause in self.clauses:
             for term in clause.terms:
                 term.reassign_val()
@@ -121,6 +122,7 @@ class Clause:
             # so there is only one Term that is None, all others are False
             i_unique = self.literals_values.index(None)
             u_term = self.terms[i_unique]
+            tracer(f"clause {self} must be satisfied with {u_term}", TRACE_LVL, 5)
             if u_term.neg is True:
                 return {'x': u_term.x, 'val': True}
             else:
@@ -128,13 +130,13 @@ class Clause:
         return None
 
     def __repr__(self):
-        return f"* Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
+        return f"Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
 
 
 class Term:
     """ Term, with an id (x1, x2, ...), neg T/F, and a value 0 or 1 """
     tot_nb_terms = 0    # total nb of terms
-    nb_terms_count = 0
+    # nb_terms_count = 0
     values = {}
 
     def __init__(self, x, neg=True):
@@ -152,12 +154,22 @@ class Term:
         # todo: this previous assignment is not a pointer.  Therefore the value is stored and not updated
 
     def count_unassigned():
+        """Count th enumber of literals which don't have an assigned / constrained value (still None value)"""
         unassigned_terms = 0
         for k in Term.values.keys():
             if Term.values[k] is None: unassigned_terms += 1
         return unassigned_terms
 
+    def x_are_none():
+        """Return all keys with value None"""
+        list_x = []
+        for k in Term.values.keys():
+            if Term.values[k] is None:
+                list_x.append(k)
+        return list_x
+
     def reassign_val(self):
+        """Update the value of the Term by looking at the class variable"""
         self.val = Term.values[self.x]
 
     def assigned_val(self):
@@ -174,7 +186,7 @@ class Term:
         else:                   return f" x{self.x}"
 
     def __repr__(self):
-        return f"Term {self.short_str()}, val={self.val}"
+        return f"Term {self.short_str()}, val={self.val}, neg={self.neg}"
 
 
 class Solutions:
