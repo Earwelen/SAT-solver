@@ -37,6 +37,12 @@ TRACE_LVL = 2
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
+# Solutions.    Dimension 0: choice iteration nb,
+#               Dim 1: 0-Choice/1-Implied/2-Final values,
+#               Dim 2: [formula.solved] + x[1..n]
+# todo This list of list of list will grow exponential. Might need to find a better solution here
+sol = [[[]]]
+depth_n = 1
 
 
 # #######################################################################################
@@ -97,10 +103,10 @@ def recursive_sat_check():
     :return: Returns if the formula is satisfiable: True/False/None
     """
 
-    found_x = True
+    implied_x = True
     iteration = 0
 
-    while found_x is not None:
+    while implied_x is not None:
         # todo might need to move the solution from Term.values to another variable
 
         unassigned_terms = Term.count_unassigned()
@@ -109,15 +115,64 @@ def recursive_sat_check():
         formula.reassign_terms_val()
         formula.satisfiable()       # recheck all the clauses satisfiability
 
-        found_x = formula.find_unique_terms()
-        if found_x is None: break
-
-        tracer(f"Found Term {found_x} that has an unique possible value \n", TRACE_LVL, 2)
-        Term.values[found_x['x']] = found_x['val']
+        implied_x = formula.find_unique_terms()
+        if implied_x is None: break
+        # else:
+        tracer(f"Found Term {implied_x} that has an unique possible value \n", TRACE_LVL, 2)
+        for k_v in implied_x:
+            Term.values[k_v['x']] = k_v['val']
+            # todo add to implied_list as well
 
         iteration += 1
 
     return formula.solved
+
+
+# #######################################################################################
+# #################            choose a value to fix            #########################
+def choose_term(depth_i):
+    """
+
+    :return:
+    """
+    values_proposition = sol[depth_i - 1][2]
+    while values_proposition in sol[:][2]:
+
+        values_proposition.index(None)
+    x_index = 0
+    return x_index
+
+
+# #######################################################################################
+# #################      recursively choose values of terms     #########################
+def rec_try_values(n, i_explored):
+    """
+    choose a value of an unconstrained term and check satisfiability of the formula.
+    if still neither True or False, recursively choose more terms
+    """
+    tracer(f"Iteration {depth_n}. Making a guess", TRACE_LVL, 0)
+
+    for x in range():
+        pass
+
+    no_new_solution = False
+    if no_new_solution:
+        return
+    else:
+        print(f"potato {depth_n}")
+        depth_n += 1
+
+    # Choose a None term
+
+    # Assign it
+
+    # Recompute satisfiability
+    formula.satisfiable()
+    # Go deeper in choices
+    if formula.solved is None:
+        rec_try_values()
+    else:
+        add_solution()
 
 
 # #######################################################################################
@@ -132,7 +187,7 @@ def solver():
     # values = {1: True, 2: False, 3: False}
     # Term.values = values
 
-    # todo Simplify formula by identifying almost duplicates
+    # todo Simplify formula by identifying almost duplicates clauses
 
     # todo recursive checking of possibilities
     # todo find multiple solutions
@@ -145,18 +200,29 @@ def solver():
     # todo if formula == True / False / None => decide
     # todo while loop
 
+    # todo if need deep recursion
+    if False:
+        import sys
+        sys.setrecursionlimit(5000)
+
     if False:
         for x in Term.values:
             for tf in (True, False):
                 for again in Term.values:
                     print("until idk")
 
-    # Simple solving if no need for guess or reduction
-    satisfiable = recursive_sat_check()
+    # Initial check for obvious solutions
+    recursive_sat_check()
+    # initial_terms = [formula.solved] + Term.values
+    # sol[0] hold the initial values, those that can't be changed (too constrained)
+    # sol.append([initial_terms, initial_terms, initial_terms])
+
+    # rec_try_values()
+    print(Term.tot_nb_terms)
 
     # End of the Solver
     tracer(f"\nTerms = {Term.values}", TRACE_LVL, 1)
-    tracer(f"\nThe formula is satisfiable: {satisfiable}", TRACE_LVL, 0)
+    tracer(f"\nThe formula is satisfiable: {formula.solved}", TRACE_LVL, 0)
     tracer("\nEnd of main function\n", TRACE_LVL, 1)
 
 
