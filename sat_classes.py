@@ -10,7 +10,7 @@
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
 from ui import tracer
 
-TRACE_LVL = 5
+TRACE_LVL = 1
 
 
 class Formula:

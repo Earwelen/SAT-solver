@@ -203,8 +203,6 @@ def rec_try_values(i_explored):
 
             # Check that we didn't already search this set of values
             was_done = []
-            tracer("C'mon fix that", TRACE_LVL, 0)
-            tracer(f"\t\t\t\t\t\t\t{Term.values}", TRACE_LVL, 0)
             # pprint(sol)
             for explored_values in sol:
                 was_done.append(True if Term.values == explored_values['values'] else False)
