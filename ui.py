@@ -46,7 +46,7 @@ def tracer(message, tracing_lvl=3, mess_priority=10, m_type="info", flush=False)
     if tracing_lvl is None or tracing_lvl < 0:
         tracing_lvl = 3
     if mess_priority <= tracing_lvl:
-        print("  " * m.priority + str(m.msg))
+        print("  " * m.priority + str(m.msg), flush=True)
 
     # #################################################################################################################
     # Then if it's a special message, special behavior can happen
