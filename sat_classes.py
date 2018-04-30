@@ -69,7 +69,9 @@ class Formula:
                 term.reassign_val()
 
     def __repr__(self):
-        return f"Formula consists of the following list of clauses: \n" + "\n".join([str(c) for c in self.clauses])
+        return f"Formula has {Term.tot_nb_terms} terms and {Clause.nb_clauses_count} clauses, " \
+               f"consisting of the following list of clauses: \n" \
+               + "\n".join([str(c) for c in self.clauses])
 
 
 class Clause:
@@ -196,7 +198,7 @@ class Term:
 
 class Solutions:
     """
-    DEPRECATED : using numpy instead
+    DEPRECATED : using list / numpy / pandas instead
 
     Holds a set of solutions, the values of the terms.
     Used for the guess, trying random values
