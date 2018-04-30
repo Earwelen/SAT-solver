@@ -8,16 +8,14 @@
 # #######################################################################################
 
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
-from operator import mul
-from functools import reduce
 from ui import tracer
 
-TRACE_LVL = 6
+TRACE_LVL = 1
 
 
-def prod(iterable):
-    """ Return the product of all terms like sum() """
-    return reduce(mul, iterable, 1)
+def set_tracing_lvl(lvl):
+    global TRACE_LVL
+    TRACE_LVL = lvl
 
 
 class Formula:
@@ -29,6 +27,7 @@ class Formula:
         self.nb_clauses = 0
         self.clauses = []
         self.terms = []
+        self.solved = None
 
     def create_terms(self):
         self.terms = [Term(x) for x in range(1, self.nb_terms + 1)]
@@ -37,9 +36,34 @@ class Formula:
         self.clauses = [Clause(x) for x in range(self.nb_clauses)]
 
     def satisfiable(self):
-        return prod([x.satisfiable() for x in self.clauses])
+        self.reassign_terms_val()
+        clauses_satis = [clause.satisfiable() for clause in self.clauses]
+        if False in clauses_satis:
+            self.solved = False
+        elif None in clauses_satis:
+            self.solved = None
+        else:
+            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 4)
+            self.solved = True
+        return self.solved
+
+    def find_unique_terms(self):
+        """
+        Find the literals that have enough constrains to take a value.
+        :return: List of x: True/False that are implied by the value of other literals
+        """
+        literals = []
+        for clause in self.clauses:
+            found_x = clause.unique_term()
+            if found_x is not None:
+                literals.append(found_x)
+        if len(literals) >= 1:
+            return literals
+        else:
+            return None
 
     def reassign_terms_val(self):
+        """Update the value of each of the Term objects, from the class variable Term.values"""
         for clause in self.clauses:
             for term in clause.terms:
                 term.reassign_val()
@@ -56,25 +80,68 @@ class Clause:
     nb_clauses_count = 0
 
     def __init__(self, ):
+        """
+        A Clause consists of Terms, stored in self.terms
+        the masks enable to mask the terms that are already evaluating to true.
+        if the whole Clause is satisfiable, the self.satisfied == True
+        """
         self.index = Clause.nb_clauses_count
         self.terms = []
+        self.literals_values = []
+        self.satisfied = None
+        self.nb_terms = None
         Clause.nb_clauses_count += 1
 
+    def append_term(self, to_append):
+        """ To have same number of terms and masks """
+        self.terms.append(to_append)
+        self.literals_values.append(None)
+        self.nb_terms = len(self.terms)
+
     def satisfiable(self):
-        """ It is satisfiable if at least one Term is True """
-        is_satis = [x.assigned_val() for x in self.terms]
-        clause_sat = sum(is_satis) >= 1
-        tracer(f"Clause {str(self.index)} evaluates to  {clause_sat}, details: {is_satis}", TRACE_LVL, 3)
+        """
+        It is satisfiable if at least one Term is True
+        self.literals_values compute the evaluation of each term, True / False or None if no value yet
+        """
+        self.literals_values = [x.assigned_val() for x in self.terms]
+        if True in self.literals_values:
+            clause_sat = True
+        elif None in self.literals_values:
+            clause_sat = None
+        else:
+            clause_sat = False
+        self.satisfied = clause_sat
+
+        tracer(f"Clause {str(self.index)} evaluates to {clause_sat}, details: {self.literals_values}, "
+               f"{[x.short_str() for x in self.terms]}", TRACE_LVL, 6)
         return clause_sat
 
+    def unique_term(self):
+        """
+        If there an unique term that is undefined, all others are False,
+        only one value is possible to satisfy the Clause
+
+        :return: TRue/False/None Return the only value that can be assigned to that x
+        """
+        if self.satisfied is None and self.literals_values.count(None) == 1:
+            # so there is only one Term that is None, all others are False
+            i_unique = self.literals_values.index(None)
+            u_term = self.terms[i_unique]
+            tracer(f"clause {self} must be satisfied with {u_term}", TRACE_LVL, 5)
+            if u_term.neg is True:
+                return {'x': u_term.x, 'val': True}
+            else:
+                return {'x': u_term.x, 'val': False}
+        return None
+
     def __repr__(self):
-        return f"* Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
+        return f"Clause {self.index + 1} with Terms: \t(" + "\tv\t".join([t.short_str() for t in self.terms]) + ")"
 
 
 class Term:
     """ Term, with an id (x1, x2, ...), neg T/F, and a value 0 or 1 """
     tot_nb_terms = 0    # total nb of terms
-    nb_terms_count = 0
+    # nb_terms_count = 0
     values = {}
 
     def __init__(self, x, neg=True):
@@ -83,28 +150,107 @@ class Term:
         :param x: x1, x2, x3 : id of the term
         :param neg: !! True if positive, False if need negation !!
         """
+        if x not in Term.values.keys():
+            Term.tot_nb_terms += 1
         Term.values[x] = None
         self.x = x
         self.neg = neg
         self.val = Term.values[x]
-        Term.tot_nb_terms += 1
+        # todo: this previous assignment is not a pointer.  Therefore the value is stored and not updated
+
+    def count_unassigned():
+        """Count th enumber of literals which don't have an assigned / constrained value (still None value)"""
+        unassigned_terms = 0
+        for k in Term.values.keys():
+            if Term.values[k] is None: unassigned_terms += 1
+        return unassigned_terms
+
+    def x_are_none():
+        """Return all keys with value None"""
+        list_x = []
+        for k in Term.values.keys():
+            if Term.values[k] is None:
+                list_x.append(k)
+        return list_x
 
     def reassign_val(self):
+        """Update the value of the Term by looking at the class variable"""
         self.val = Term.values[self.x]
 
     def assigned_val(self):
         """ Compute the value when required, neg * val """
-        assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
+        # assert self.val is not None, f"One Term doesn't have any value: x{self.x}={self.val}"
+        tracer(f"{str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
+
         # make use of Python True==1 and False ==0, to apply the negation easily
-        tracer(f"Term: {str(self)}, neg={self.neg} val={self.val}", TRACE_LVL, 6)
-        return self.neg == self.val
+        if self.val is None:    return None
+        else:                   return self.neg == self.val
 
     def short_str(self):
         if self.neg == False:   return f"-x{self.x}"
-        else:                   return f"x{self.x}"
+        else:                   return f" x{self.x}"
 
     def __repr__(self):
-        return f"Term {self.short_str()}, val={self.val}"
+        return f"Term {self.short_str()}, val={self.val}, neg={self.neg}"
+
+
+class Solutions:
+    """
+    DEPRECATED : using numpy instead
+
+    Holds a set of solutions, the values of the terms.
+    Used for the guess, trying random values
+
+    self.satis: is this set of terms leading to a solutions or not
+    self.chosen: terms that have been decided
+    self.implied: terms which values are induced by the previous choices.
+    self.values: combine both
+    """
+
+    def __init__(self, initial_values):
+        """
+        :param initial_values: should be the values that are constrained by the formula, without any guess \
+                                same structure as Term.values = [{index: True/False/None} for all indexes]
+
+        self.satis: is this set of terms leading to a solutions or not
+        self.chosen: terms that have been decided
+        self.implied: terms which values are induced by the previous choices.
+        self.values: combine both
+        """
+        self.satis = None
+        self.initial = initial_values
+        self.chosen = {k: None for k in initial_values.keys()}
+        self.implied = {k: None for k in initial_values.keys()}
+        self.values = {}
+        self.update_values()
+
+    def update_values(self):
+        for key in self.values.keys():
+            chosen_k = self.chosen[key]
+            implied_k = self.implied[key]
+            initial = self.initial[key]
+
+            # ensure that no contradiction exists
+            assert not(True in (chosen_k, implied_k, initial) and False in (chosen_k, implied_k, initial)), \
+                "Contradiction in chosen and implied terms values"
+
+            # Then just take the value from any dic. None is the default if no value in any variable.
+            self.values[key] = chosen_k or implied_k or initial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
