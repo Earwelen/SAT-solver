@@ -14,7 +14,7 @@
 # todo do the sat solver
 # todo general variable with values of terms, easy to change for all. In Formula or in Term class ?
 #
-# call prog with => python sat_solver.py "cnf_formulas/cnf1.cnf"
+# call prog with => python sat_solver.py "cnf_formulas/cnf-2.cnf"
 #
 # #######################################################################################
 # ########################      Example of CNF Formula      #############################
@@ -40,10 +40,8 @@ TRACE_LVL = 1
 
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
-# Solutions.    Dimension 0: choice iteration nb,
-#               Dim 1: [formula.solved] + x[1..n]
-# todo This list of list of list will grow exponential. Might need to find a better solution here
-sol = pd.DataFrame()    # TOOOOO BIG
+# todo describe this solutions holder
+sol = pd.DataFrame()
 """
 Sol Structure :
 
@@ -176,6 +174,8 @@ def save_solution_pd():
     """
     global sol
 
+    # todo check if there is not a broader set of solution. merge with it.
+
     new_solution = OrderedDict({'solved': formula.solved})
     for k in Term.values.keys():
         new_solution[f"x{k}"] = Term.values[k]
@@ -283,10 +283,12 @@ def solver(cnf_file, set_trace):
     rec_try_values([])
 
     # todo: Need to remove duplicates in the solutions
-    #
+
+    # Save solutions
+    # todo save sol.to_csv() every 5 seconds ?
+    sol.to_csv(f"Solutions/{cnf_file[:-4]}-solved.csv", sep=';')
 
     # End of the Solver
-    # sort_sol()
     tracer(f"\n ********************************************************************************\n"
            f"\nEnd of the solving (hopefully). let's recap. The formula: ", TRACE_LVL, 0)
     tracer(f"\n{formula} \n", TRACE_LVL, 0)
