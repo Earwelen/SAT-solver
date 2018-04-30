@@ -28,7 +28,8 @@
 import argparse
 import os
 import itertools
-import numpy as np
+import pandas as pd
+from collections import OrderedDict
 from pprint import pprint
 from ui import tracer
 from sat_classes import Term, Clause, Formula, set_tracing_lvl
@@ -41,10 +42,10 @@ TRACE_LVL = 1
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
 # Solutions.    Dimension 0: choice iteration nb,
-#               Dim 1: 0-Choice/1-Implied/2-Final values,
-#               Dim 2: [formula.solved] + x[1..n]
+#               Dim 1: [formula.solved] + x[1..n]
 # todo This list of list of list will grow exponential. Might need to find a better solution here
 sol = []
+sol = pd.DataFrame()    # TOOOOO BIG
 explored = []
 depth_n = 1
 
@@ -97,14 +98,6 @@ def text_parse_to_formula(text_file):
 
             else:
                 tracer(f"Hmmm {striped_line} was not recognized: {striped_line[0]}", TRACE_LVL, 1, m_type="warning")
-
-
-# #######################################################################################
-# #################                  Sort solutions               #######################
-def sort_sol():
-    # todo, not used yet
-    global sol
-    solutions = []
 
 
 # #######################################################################################
@@ -243,15 +236,21 @@ def rec_try_values(i_explored):
 
 # #######################################################################################
 # #############################      main function     ##################################
-def solver(set_trace):
+def solver(cnf_file, set_trace):
     """ Main function to solve the SAT pb. Most of the computation is into the objects """
+    global sol
     global TRACE_LVL
     TRACE_LVL = set_trace
 
+    # Read from CNF file and create the Formula object
+    text_parse_to_formula(cnf_file)
+
+    tracer(f"********************************************************************************\n"
+           f"Here is our formula, freshly picked from the file {cnf_file} \n\n"
+           f"********************************************************************************", TRACE_LVL, 0)
     tracer(formula, TRACE_LVL, 0)
     tracer(f"Let's start solving ! \n\n"
-           f"********************************************************************************"
-           f"", TRACE_LVL, 0)
+           f"********************************************************************************", TRACE_LVL, 0)
 
     # todo Simplify formula by identifying almost duplicates clauses
 
@@ -259,13 +258,19 @@ def solver(set_trace):
     # todo create choices_good, choices_bad
 
     # todo if need deep recursion
-    if True:
+    if False:
         import sys
         sys.setrecursionlimit(5000)
 
     # Initial check for obvious solutions
     recursive_sat_check()
-    sol.append({'solved': formula.solved, 'values': Term.values.copy()})
+
+    # Initialize solutions
+    first_solution = OrderedDict({'solved': [formula.solved]})
+    for k in sorted(Term.values.keys()):
+        first_solution[k] = [Term.values[k]]
+    first_solution['nb_of_combinations'] = [2**Term.count_unassigned()]
+    sol = pd.DataFrame(data=first_solution)
 
     # Launch the resolution
     rec_try_values([])
@@ -314,7 +319,6 @@ if __name__ == '__main__':
 
     # Parse the text file to formula
     print("Hello, lets start ! Welcome to my SAT solver !")
-    text_parse_to_formula(args.input_file)
     set_tracing_lvl(args.verbosity)
 
     #
@@ -324,7 +328,7 @@ if __name__ == '__main__':
         try:
             import cProfile
             import pstats
-            cProfile.run("solver(args.verbosity)", "cProfileStats")
+            cProfile.run("solver(args.input_file, args.verbosity)", "cProfileStats")
             stats = pstats.Stats("cProfileStats")
             # Sort the stats and print the 10 first rows
             stats.sort_stats("tottime")
@@ -336,7 +340,7 @@ if __name__ == '__main__':
             os.remove("cProfileStats")
 
     else:
-        solver(args.verbosity)
+        solver(args.input_file, args.verbosity)
 
     # End
     print("Bye bye see you next time ! ~Sylvain \n")
