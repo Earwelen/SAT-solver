@@ -210,7 +210,7 @@ def rec_try_values(i_explored):
         if x in i_explored:
             continue
 
-        tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}. looping", TRACE_LVL, 0)
+        tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}. {len(sol)-1} solutions so far (True and False)", TRACE_LVL, 0)
 
         for true_false in (True, False):
             Term.values[x] = true_false
@@ -294,7 +294,10 @@ def solver(cnf_file, set_trace):
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
     pprint(sol[sol.solved == True])
     formula_satisfiable = len(sol[sol.solved == True])
-    tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions", TRACE_LVL, 0)
+    tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions \n"
+           f"None values mean it can take either True or False without affecting the result. \n"
+           f"There is currently duplicates because of that. The number of combinations doesn't \n"
+           f"take these duplicates into account. Next merge :) ", TRACE_LVL, 0)
     tracer("\nThank you and hoping that I was useful ! :) \n", TRACE_LVL, 1)
 
 
