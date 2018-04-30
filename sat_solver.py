@@ -27,7 +27,6 @@
 # imports
 import argparse
 import os
-import itertools
 import pandas as pd
 from collections import OrderedDict
 from pprint import pprint
@@ -45,6 +44,10 @@ formula = Formula()
 #               Dim 1: [formula.solved] + x[1..n]
 # todo This list of list of list will grow exponential. Might need to find a better solution here
 sol = pd.DataFrame()    # TOOOOO BIG
+"""
+Sol Structure :
+
+"""
 explored = []
 depth_n = 1
 
@@ -151,19 +154,16 @@ def check_is_in_solutions():
 
     assigned_terms = {f"x{k}": Term.values[k] for k in Term.values.keys() if Term.values[k] is not None}
 
-    print("--------------------------------------------------")
-    print("the SOLUTIONS")
-    print(sol)
+    tracer(f"Current set of solutions", TRACE_LVL, 5)
+    tracer(sol, TRACE_LVL, 5)
     query = " and ".join([f"{k} == {assigned_terms[k]}" for k in assigned_terms.keys()])
-    print("Query is: " + query)
+    tracer("Query is: " + query, TRACE_LVL, 7)
 
-    print("QUERIED")
     queried = sol.query(query)
-    print(queried)
+    tracer(queried, TRACE_LVL, 7)
     nb_occurrences = len(queried)
-    print(nb_occurrences)
 
-    tracer(f"----- nb of occurrences = {nb_occurrences} -----", TRACE_LVL, 0)
+    tracer(f"This set of literals appears {nb_occurrences} times in the solutions", TRACE_LVL, 6)
 
     return True if nb_occurrences > 0 else False
 
@@ -176,20 +176,13 @@ def save_solution_pd():
     """
     global sol
 
-    print("#######################################################")
-    tracer(f"START THIS COMBINATIONS. UNASSIGNED: {Term.count_unassigned()}", TRACE_LVL, 7)
-
     new_solution = OrderedDict({'solved': formula.solved})
     for k in Term.values.keys():
         new_solution[f"x{k}"] = Term.values[k]
     new_solution['nb_of_combinations'] = 2**Term.count_unassigned()
-    print("new_solution")
-    print(new_solution)
-    # pd_solution = pd.DataFrame(data=new_solution)
-    # print(pd_solution)
     sol = sol.append(new_solution, ignore_index=True)
 
-    tracer(f"DONE APPENDING COMBINATIONS", TRACE_LVL, 7)
+    tracer(f"Appended solution {new_solution}", TRACE_LVL, 7)
 
 
 # #######################################################################################
@@ -289,6 +282,9 @@ def solver(cnf_file, set_trace):
     # Launch the resolution
     rec_try_values([])
 
+    # todo: Need to remove duplicates in the solutions
+    #
+
     # End of the Solver
     # sort_sol()
     tracer(f"\n ********************************************************************************\n"
@@ -298,7 +294,7 @@ def solver(cnf_file, set_trace):
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
     pprint(sol[sol.solved == True])
     formula_satisfiable = len(sol[sol.solved == True])
-    tracer(f"\nThe formula is satisfiable with {formula_satisfiable} solutions", TRACE_LVL, 0)
+    tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions", TRACE_LVL, 0)
     tracer("\nThank you and hoping that I was useful ! :) \n", TRACE_LVL, 1)
 
 
