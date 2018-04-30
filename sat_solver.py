@@ -140,7 +140,7 @@ def recursive_sat_check():
 
 
 # #######################################################################################
-# #################      recursively choose values of terms     #########################
+# #################      find all combinations of terms/values     ######################
 def generate_combinations(init_dict):
     """
     Find all combinations of True/False for the terms that are set as None.
