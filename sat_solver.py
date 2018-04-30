@@ -44,7 +44,6 @@ formula = Formula()
 # Solutions.    Dimension 0: choice iteration nb,
 #               Dim 1: [formula.solved] + x[1..n]
 # todo This list of list of list will grow exponential. Might need to find a better solution here
-sol = []
 sol = pd.DataFrame()    # TOOOOO BIG
 explored = []
 depth_n = 1
@@ -140,6 +139,18 @@ def recursive_sat_check():
 
 
 # #######################################################################################
+# #################      check if set of values in solutions       ######################
+def check_in_solutions():
+    """
+    Check if a set of values has already been checked by the sat solver.
+    Look into the pandas solutions DataFrame
+    :return:
+    """
+
+    return False
+
+
+# #######################################################################################
 # #################      find all combinations of terms/values     ######################
 def generate_combinations(init_dict):
     """
@@ -148,11 +159,12 @@ def generate_combinations(init_dict):
     """
     nb_unassigned = Term.count_unassigned()
     return_list = []
-    all_combinations = list(itertools.product((True, False), repeat=nb_unassigned))
+    # all_combinations = list(itertools.product((True, False), repeat=nb_unassigned))
     none_indexes = Term.x_are_none()
 
     tracer(f"START THIS COMBINATIONS. UNASSIGNED: {nb_unassigned} which means "
            f"{2**nb_unassigned} possibilities", TRACE_LVL, 7)
+
     for combi in all_combinations:
         tmp = init_dict['values'].copy()
         for i in range(len(combi)):
@@ -207,12 +219,8 @@ def rec_try_values(i_explored):
             tracer(f"Choosing x{x}={true_false}. Term.values = {Term.values}", TRACE_LVL, 1)
 
             # Check that we didn't already search this set of values
-            was_done = []
-            # pprint(sol)
-            for explored_values in sol:
-                was_done.append(True if Term.values == explored_values['values'] else False)
-            # tracer(f"**** was_done = {was_done}", TRACE_LVL, 6)
-            if sum(was_done) >= 1:
+            already_checked = check_in_solutions()
+            if already_checked:
                 tracer(f"**** Has already been tried in previous loops {Term.values}", TRACE_LVL, 5)
                 continue
 
