@@ -43,7 +43,7 @@ class Formula:
         elif None in clauses_satis:
             self.solved = None
         else:
-            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 3)
+            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 4)
             self.solved = True
         return self.solved
 
@@ -113,7 +113,7 @@ class Clause:
         self.satisfied = clause_sat
 
         tracer(f"Clause {str(self.index)} evaluates to {clause_sat}, details: {self.literals_values}, "
-               f"{[x.short_str() for x in self.terms]}", TRACE_LVL, 4)
+               f"{[x.short_str() for x in self.terms]}", TRACE_LVL, 6)
         return clause_sat
 
     def unique_term(self):
