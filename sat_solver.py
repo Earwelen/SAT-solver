@@ -14,7 +14,7 @@
 # todo do the sat solver
 # todo general variable with values of terms, easy to change for all. In Formula or in Term class ?
 #
-# call prog with => python sat_solver.py "cnf_formulas/cnf-1.cnf"
+# call prog with => python sat_solver.py "cnf_formulas/cnf1.cnf"
 #
 # #######################################################################################
 # ########################      Example of CNF Formula      #############################
