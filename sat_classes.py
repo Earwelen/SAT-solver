@@ -9,6 +9,7 @@
 
 # Classes for SAT solver. A Formula consists of Clauses, which themselves consist of Terms
 from ui import tracer
+from collections import OrderedDict
 
 TRACE_LVL = 1
 
@@ -144,7 +145,7 @@ class Term:
     """ Term, with an id (x1, x2, ...), neg T/F, and a value 0 or 1 """
     tot_nb_terms = 0    # total nb of terms
     # nb_terms_count = 0
-    values = {}
+    values = OrderedDict()
 
     def __init__(self, x, neg=True):
         """
