@@ -1,0 +1,11 @@
+c Cnf to test backtracking and restoring(tests most of the cases if not all)
+c Not Satasfiable
+p cnf 3 8
+1 2 3 0
+1 2 -3 0
+1 -2 3 0
+1 -2 -3 0
+-1 2 3 0
+-1 2 -3 0
+-1 -2 3 0
+-1 -2 -3 0
