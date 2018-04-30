@@ -13,6 +13,11 @@ from ui import tracer
 TRACE_LVL = 1
 
 
+def set_tracing_lvl(lvl):
+    global TRACE_LVL
+    TRACE_LVL = lvl
+
+
 class Formula:
     """ CNF Formula: list of clauses """
     terms_values = {}
