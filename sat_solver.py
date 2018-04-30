@@ -140,48 +140,54 @@ def recursive_sat_check():
 
 # #######################################################################################
 # #################      check if set of values in solutions       ######################
-def check_in_solutions():
+def check_is_in_solutions():
     """
     Check if a set of values has already been checked by the sat solver.
     Look into the pandas solutions DataFrame
     :return:
     """
+    # todo search if any row has the same True / False, don't care about None values
+    # todo: might need that for save_solutions_pd to avoid duplicates
 
-    return False
+    assigned_terms = {f"x{k}": Term.values[k] for k in Term.values.keys() if Term.values[k] is not None}
+
+    print("--------------------------------------------------")
+    print("the SOLUTIONS")
+    print(sol)
+    query = " and ".join([f"{k} == {assigned_terms[k]}" for k in assigned_terms.keys()])
+    print("Query is: " + query)
+
+    print("QUERIED")
+    queried = sol.query(query)
+    print(queried)
+    nb_occurrences = len(queried)
+    print(nb_occurrences)
+
+    tracer(f"----- nb of occurrences = {nb_occurrences} -----", TRACE_LVL, 0)
+
+    return True if nb_occurrences > 0 else False
 
 
 # #######################################################################################
 # #################      find all combinations of terms/values     ######################
-def generate_combinations(init_dict):
+def save_solution_pd():
     """
-    Find all combinations of True/False for the terms that are set as None.
-    Then add these solutions to the list of solutions, if not redundant.
+    Save (append) the solution into pandas DataFrame
     """
-    nb_unassigned = Term.count_unassigned()
-    return_list = []
-    # all_combinations = list(itertools.product((True, False), repeat=nb_unassigned))
-    none_indexes = Term.x_are_none()
+    global sol
 
-    tracer(f"START THIS COMBINATIONS. UNASSIGNED: {nb_unassigned} which means "
-           f"{2**nb_unassigned} possibilities", TRACE_LVL, 7)
+    print("#######################################################")
+    tracer(f"START THIS COMBINATIONS. UNASSIGNED: {Term.count_unassigned()}", TRACE_LVL, 7)
 
-    for combi in all_combinations:
-        tmp = init_dict['values'].copy()
-        for i in range(len(combi)):
-            tmp[none_indexes[i]] = combi[i]
-        return_list.append({'solved': init_dict['solved'], 'values': tmp.copy()})
-    tracer(f"returning combination of possibilities : {return_list}", TRACE_LVL, 7)
-
-    tracer(f"SO THE NUMBER OF COMBI IS : {len(return_list)}", TRACE_LVL, 7)
-
-    for new_combi in return_list:
-        add = True
-        for ref in sol:
-            if ref == new_combi:
-                add = False
-                break
-        if add:
-            sol.append(new_combi)
+    new_solution = OrderedDict({'solved': formula.solved})
+    for k in Term.values.keys():
+        new_solution[f"x{k}"] = Term.values[k]
+    new_solution['nb_of_combinations'] = 2**Term.count_unassigned()
+    print("new_solution")
+    print(new_solution)
+    # pd_solution = pd.DataFrame(data=new_solution)
+    # print(pd_solution)
+    sol = sol.append(new_solution, ignore_index=True)
 
     tracer(f"DONE APPENDING COMBINATIONS", TRACE_LVL, 7)
 
@@ -219,7 +225,7 @@ def rec_try_values(i_explored):
             tracer(f"Choosing x{x}={true_false}. Term.values = {Term.values}", TRACE_LVL, 1)
 
             # Check that we didn't already search this set of values
-            already_checked = check_in_solutions()
+            already_checked = check_is_in_solutions()
             if already_checked:
                 tracer(f"**** Has already been tried in previous loops {Term.values}", TRACE_LVL, 5)
                 continue
@@ -230,7 +236,7 @@ def rec_try_values(i_explored):
                 tracer(f"*Solved={formula.solved}* -> adding solution n{len(sol)} if not redundant: "
                        f"Term.values = {Term.values}", TRACE_LVL, 2)
                 # Add the solution to the global variable
-                generate_combinations({'solved': formula.solved, 'values': Term.values.copy()})
+                save_solution_pd()
             else:
                 depth_n += 1
                 tracer(f"Not Solved. Let's go to depth_n={depth_n}. Term.values = {Term.values}", TRACE_LVL, 3)
@@ -276,7 +282,7 @@ def solver(cnf_file, set_trace):
     # Initialize solutions
     first_solution = OrderedDict({'solved': [formula.solved]})
     for k in sorted(Term.values.keys()):
-        first_solution[k] = [Term.values[k]]
+        first_solution[f"x{k}"] = [Term.values[k]]
     first_solution['nb_of_combinations'] = [2**Term.count_unassigned()]
     sol = pd.DataFrame(data=first_solution)
 
@@ -290,8 +296,8 @@ def solver(cnf_file, set_trace):
     tracer(f"\n{formula} \n", TRACE_LVL, 0)
     tracer(f"********************************************************************************", TRACE_LVL, 0)
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
-    pprint([s for s in sol if s['solved'] is True])
-    formula_satisfiable = sum([for_sat['solved'] is True for for_sat in sol])
+    pprint(sol[sol.solved == True])
+    formula_satisfiable = len(sol[sol.solved == True])
     tracer(f"\nThe formula is satisfiable with {formula_satisfiable} solutions", TRACE_LVL, 0)
     tracer("\nThank you and hoping that I was useful ! :) \n", TRACE_LVL, 1)
 
