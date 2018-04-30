@@ -86,7 +86,7 @@ def text_parse_to_formula(text_file):
             # Real clause. Decompose it
             elif striped_line.split()[0].lstrip("-").isdigit():
                 # have each int
-                int_list = [int(x) for x in striped_line.split(" ")]
+                int_list = [int(x) for x in striped_line.split()]
                 if int_list[-1] == 0:
                     int_list = int_list[:-1]        # drop last '0'
                 else:
@@ -294,8 +294,11 @@ def solver(cnf_file, set_trace):
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
     pprint(sol[sol.solved == True])
     formula_satisfiable = len(sol[sol.solved == True])
-    tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions \n"
-           f"None values mean it can take either True or False without affecting the result. \n"
+    if formula_satisfiable > 0:
+        tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions ", TRACE_LVL, 0)
+    else:
+        tracer(f"\nThe formula is NOT satisfiable", TRACE_LVL, 0)
+    tracer(f"None values mean it can take either True or False without affecting the result. \n"
            f"There is currently duplicates because of that. The number of combinations doesn't \n"
            f"take these duplicates into account. Next merge :) ", TRACE_LVL, 0)
     tracer("\nThank you and hoping that I was useful ! :) \n", TRACE_LVL, 1)
