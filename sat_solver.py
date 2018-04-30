@@ -286,7 +286,9 @@ def solver(cnf_file, set_trace):
 
     # Save solutions
     # todo save sol.to_csv() every 5 seconds ?
-    sol.to_csv(f"Solutions/{cnf_file[:-4]}-solved.csv", sep=';')
+    save_to = "cnf_formulas/Solutions/" + cnf_file.split('/')[-1].split('.')[0] + "-solved.csv"
+    sol.to_csv(save_to, sep=',')
+    tracer(f"\n*** Solutions save to {save_to} ***", TRACE_LVL, 0)
 
     # End of the Solver
     tracer(f"\n ********************************************************************************\n"
