@@ -27,10 +27,9 @@
 # imports
 import argparse
 import os
-from pprint import pprint
-
 import itertools
-
+import numpy as np
+from pprint import pprint
 from ui import tracer
 from sat_classes import Term, Clause, Formula, set_tracing_lvl
 
@@ -159,12 +158,16 @@ def generate_combinations(init_dict):
     all_combinations = list(itertools.product((True, False), repeat=nb_unassigned))
     none_indexes = Term.x_are_none()
 
+    tracer(f"START THIS COMBINATIONS. UNASSIGNED: {nb_unassigned} which means "
+           f"{2**nb_unassigned} possibilities", TRACE_LVL, 0)
     for combi in all_combinations:
         tmp = init_dict['values'].copy()
         for i in range(len(combi)):
             tmp[none_indexes[i]] = combi[i]
         return_list.append({'solved': init_dict['solved'], 'values': tmp.copy()})
     tracer(f"returning combination of possibilities : {return_list}", TRACE_LVL, 5)
+
+    tracer(f"SO THE NUMBER OF COMBI IS : {len(return_list)}", TRACE_LVL, 0)
 
     for new_combi in return_list:
         add = True
@@ -174,6 +177,8 @@ def generate_combinations(init_dict):
                 break
         if add:
             sol.append(new_combi)
+
+    tracer(f"DONE APPENDING COMBINATIONS", TRACE_LVL, 0)
 
 
 # #######################################################################################
