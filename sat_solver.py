@@ -181,7 +181,7 @@ def save_solution_pd():
     for k in Term.values.keys():
         new_solution[f"x{k}"] = Term.values[k]
     # Avoid Overflow INT size.
-    new_solution['nb_unassigned_terms'] = [Term.count_unassigned()]
+    new_solution['nb_unassigned_terms'] = Term.count_unassigned()
     sol = sol.append(new_solution, ignore_index=True)
 
     tracer(f"Appended solution {new_solution}", TRACE_LVL, 7)
@@ -226,7 +226,7 @@ def rec_try_values(find_all, i_explored):
                 continue
 
             # Then alright, let's apply it
-            implied_x = recursive_sat_check()
+            recursive_sat_check()
             if formula.solved in (True, False):
                 tracer(f"*Solved={formula.solved}* -> adding solution n{len(sol)} if not redundant: "
                        f"Term.values = {Term.values}", TRACE_LVL, 2)
@@ -284,7 +284,7 @@ def solver(cnf_file, find_all, set_trace):
     first_solution = OrderedDict({'solved': [formula.solved]})
     for k in sorted(Term.values.keys()):
         first_solution[f"x{k}"] = [Term.values[k]]
-    first_solution['nb_unassigned_terms'] = [Term.count_unassigned()]
+    first_solution['nb_unassigned_terms'] = Term.count_unassigned()
     sol = pd.DataFrame(data=first_solution)
 
     # Launch the resolution
@@ -346,6 +346,7 @@ if __name__ == '__main__':
     cmd.add_argument("-a", "--all_solutions", help="Find all solutions. If more than 20 clauses/literals, "
                                                    "takes a LOT of time.", action='store_true', default=False)
     cmd.add_argument("-p", "--profiler", help="Activate the profiler", action='store_true', default=False)
+    cmd.add_argument("-m", "--memory", help="Activate memory tracker", action='store_true', default=False)
     cmd.add_argument("-v", "--verbosity", help="Verbosity level, 0 (no comments), to 10 (lots of details)",
                      type=int, default=0, choices=[i for i in range(-1, 10)])
     args = cmd.parse_args()
@@ -353,6 +354,10 @@ if __name__ == '__main__':
     # Parse the text file to formula
     print("Hello, lets start ! Welcome to my SAT solver !")
     set_tracing_lvl(args.verbosity)
+
+    if args.memory:
+        from pympler import tracker
+        tr = tracker.SummaryTracker()
 
     start_time = time()
 
@@ -366,7 +371,9 @@ if __name__ == '__main__':
             cProfile.run("solver(args.input_file, args.all_solutions, args.verbosity)", "cProfileStats")
             stats = pstats.Stats("cProfileStats")
             # Sort the stats and print the 10 first rows
-            stats.sort_stats("tottime")
+            stats.sort_stats("cumtime")
+            tracer(f"\n********************************************************************************", TRACE_LVL, 0)
+            tracer(f"\tPROFILER", TRACE_LVL, 0)
             stats.print_stats(30)
         except:
             print("** Crashed, nothing saved ** \n"
@@ -377,10 +384,15 @@ if __name__ == '__main__':
     else:
         solver(args.input_file, args.all_solutions, args.verbosity)
 
-    tracer(f"Total execution time:\t {round(time()-start_time, 3)} seconds", TRACE_LVL, 0)
+    tracer(f"\n********************************************************************************", TRACE_LVL, 0)
+    tracer(f"\tTotal execution time:\t {round(time()-start_time, 3)} seconds", TRACE_LVL, 0)
+    if args.memory:
+        tracer(f"********************************************************************************", TRACE_LVL, 0)
+        tracer(f"\tMEMORY USAGE", TRACE_LVL, 0)
+        tr.print_diff()
 
     # End
-    print("Bye bye see you next time ! ~Sylvain \n")
+    print("\nBye bye see you next time ! ~Sylvain \n")
 
 
 
