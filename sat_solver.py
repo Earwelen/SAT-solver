@@ -196,6 +196,8 @@ def rec_try_values(find_all, i_explored):
     call function to save the computed values
     try to not recheck what has already been checked
     """
+    # todo remove i_explored, seems useless with the current implementation
+
     global depth_n
     # tracer(f"=> Depth {depth_n}. Making a guess, i_explored={i_explored}", TRACE_LVL, 0)
 
@@ -210,6 +212,8 @@ def rec_try_values(find_all, i_explored):
             continue
         # this x has already been decided in another previous loop
         if x in i_explored:
+            # todo Never used ???
+            tracer(f"{x in i_explored}\t: {x} \tis in {i_explored}", TRACE_LVL, 1)
             continue
 
         tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}. {len(sol)-1} solutions so far (True and False)", TRACE_LVL, 0)
