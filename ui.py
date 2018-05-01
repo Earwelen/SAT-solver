@@ -37,14 +37,15 @@ def tracer(message, tracing_lvl=3, mess_priority=10, m_type="info", flush=False)
     :return: nothing
     :rtype: None
     """
+    # Save computing time
+    if mess_priority > tracing_lvl:
+        return
 
     # An object message is created for each new message and added to the complete trace
     m = Message(message, mess_priority, m_type)
 
     # #################################################################################################################
     # Then prints the message is its priority is high than the desired
-    if tracing_lvl is None or tracing_lvl < 0:
-        tracing_lvl = 3
     if mess_priority <= tracing_lvl:
         print("  " * m.priority + str(m.msg), flush=True)
 
