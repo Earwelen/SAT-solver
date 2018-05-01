@@ -28,6 +28,7 @@
 import argparse
 import os
 import pandas as pd
+from time import time
 from collections import OrderedDict
 from pprint import pprint
 from ui import tracer
@@ -179,7 +180,8 @@ def save_solution_pd():
     new_solution = OrderedDict({'solved': formula.solved})
     for k in Term.values.keys():
         new_solution[f"x{k}"] = Term.values[k]
-    new_solution['nb_of_combinations'] = 2**Term.count_unassigned()
+    # Avoid Overflow INT size.
+    new_solution['nb_unassigned_terms'] = [Term.count_unassigned()]
     sol = sol.append(new_solution, ignore_index=True)
 
     tracer(f"Appended solution {new_solution}", TRACE_LVL, 7)
@@ -187,7 +189,7 @@ def save_solution_pd():
 
 # #######################################################################################
 # #################      recursively choose values of terms     #########################
-def rec_try_values(i_explored):
+def rec_try_values(find_all, i_explored):
     """
     choose a value of an unconstrained term and check satisfiability of the formula.
     if still neither True or False, recursively choose more terms
@@ -230,12 +232,18 @@ def rec_try_values(i_explored):
                        f"Term.values = {Term.values}", TRACE_LVL, 2)
                 # Add the solution to the global variable
                 save_solution_pd()
+                # if just want to have the first solution, stop here.
+                if formula.solved is True and find_all is False:
+                    return
             else:
                 depth_n += 1
                 tracer(f"Not Solved. Let's go to depth_n={depth_n}. Term.values = {Term.values}", TRACE_LVL, 3)
-                rec_try_values([x] + i_explored)
+                rec_try_values(find_all, [x] + i_explored)
                 depth_n -= 1
                 tracer(f"<- Coming back to one level above, depth={depth_n}", TRACE_LVL, 3)
+                # if just want to have the first solution, stop here.
+                if formula.solved is True and find_all is False:
+                    return
 
         Term.values = previous_values
         formula.reassign_terms_val()
@@ -243,7 +251,7 @@ def rec_try_values(i_explored):
 
 # #######################################################################################
 # #############################      main function     ##################################
-def solver(cnf_file, set_trace):
+def solver(cnf_file, find_all, set_trace):
     """ Main function to solve the SAT pb. Most of the computation is into the objects """
     global sol
     global TRACE_LVL
@@ -265,7 +273,7 @@ def solver(cnf_file, set_trace):
     # todo create choices_good, choices_bad
 
     # todo if need deep recursion
-    if False:
+    if True:
         import sys
         sys.setrecursionlimit(5000)
 
@@ -276,11 +284,11 @@ def solver(cnf_file, set_trace):
     first_solution = OrderedDict({'solved': [formula.solved]})
     for k in sorted(Term.values.keys()):
         first_solution[f"x{k}"] = [Term.values[k]]
-    first_solution['nb_of_combinations'] = [2**Term.count_unassigned()]
+    first_solution['nb_unassigned_terms'] = [Term.count_unassigned()]
     sol = pd.DataFrame(data=first_solution)
 
     # Launch the resolution
-    rec_try_values([])
+    rec_try_values(find_all, [])
 
     # todo: Need to remove duplicates in the solutions
 
@@ -302,6 +310,9 @@ def solver(cnf_file, set_trace):
         tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions ", TRACE_LVL, 0)
     else:
         tracer(f"\nThe formula is NOT satisfiable", TRACE_LVL, 0)
+    if find_all is False and formula.solved is True:
+        tracer(f"If you want to find ALL the solutions, rerun with the option -a / --all_solutions "
+               f"(takes time if clauses/literals < 20 !)", TRACE_LVL, 0)
     tracer(f"None values mean it can take either True or False without affecting the result. \n"
            f"There is currently duplicates because of that. The number of combinations doesn't \n"
            f"take these duplicates into account. Next merge :) ", TRACE_LVL, 0)
@@ -332,14 +343,18 @@ if __name__ == '__main__':
         "\n")
     cmd.add_argument("input_file", help="File with cnf formula",
                      type=lambda x: is_valid_file(cmd, x))  # type=lambda x: fonction_call(cmd, x))
+    cmd.add_argument("-a", "--all_solutions", help="Find all solutions. If more than 20 clauses/literals, "
+                                                   "takes a LOT of time.", action='store_true', default=False)
     cmd.add_argument("-p", "--profiler", help="Activate the profiler", action='store_true', default=False)
     cmd.add_argument("-v", "--verbosity", help="Verbosity level, 0 (no comments), to 10 (lots of details)",
-                     type=int, default=0, choices=[i for i in range(10+1)])
+                     type=int, default=0, choices=[i for i in range(-1, 10)])
     args = cmd.parse_args()
 
     # Parse the text file to formula
     print("Hello, lets start ! Welcome to my SAT solver !")
     set_tracing_lvl(args.verbosity)
+
+    start_time = time()
 
     #
     # #######################################################################################
@@ -348,11 +363,11 @@ if __name__ == '__main__':
         try:
             import cProfile
             import pstats
-            cProfile.run("solver(args.input_file, args.verbosity)", "cProfileStats")
+            cProfile.run("solver(args.input_file, args.all_solutions, args.verbosity)", "cProfileStats")
             stats = pstats.Stats("cProfileStats")
             # Sort the stats and print the 10 first rows
             stats.sort_stats("tottime")
-            stats.print_stats(10)
+            stats.print_stats(30)
         except:
             print("** Crashed, nothing saved ** \n"
                   "* Try without the profiler to have more details *")
@@ -360,7 +375,9 @@ if __name__ == '__main__':
             os.remove("cProfileStats")
 
     else:
-        solver(args.input_file, args.verbosity)
+        solver(args.input_file, args.all_solutions, args.verbosity)
+
+    tracer(f"Total execution time:\t {round(time()-start_time, 3)} seconds", TRACE_LVL, 0)
 
     # End
     print("Bye bye see you next time ! ~Sylvain \n")
