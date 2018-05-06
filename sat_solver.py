@@ -122,7 +122,9 @@ def recursive_sat_check():
         if formula.solved is False:
             return False
 
-        implied_x = formula.find_unique_terms()
+        implied_x = None
+        # this might actually not help
+        # implied_x = formula.find_unique_terms()
 
         if implied_x is None:
             break
@@ -159,9 +161,10 @@ def check_is_in_solutions():
 
     nb_occurrences = 0
 
-    for solution in sol:
+    for solution in sol[1:]:
         # compare the values (so excludes index 0 and -1) and check if the set of values already assigned exists in
         #  the solutions
+        tracer(tuple((s, a, "s, a, and s==a ", s == a) for s, a in zip(solution[1:-1], assigned_terms) if s is not None), TRACE_LVL, 3)
         if all((s == a for s, a in zip(solution[1:-1], assigned_terms) if s is not None)):
             nb_occurrences += 1
             # if no need to count, then exit
@@ -188,14 +191,39 @@ def save_solution_list():
     for k in Term.values.keys():
         new_solution.append(Term.values[k])
     new_solution.append(Term.count_unassigned())
-    sol = sol.append(tuple(new_solution))
+    new_sol = tuple(new_solution)
 
-    tracer(f"Appended solution {sol[-1]}", TRACE_LVL, 7)
+    # Add only if not already in solution list
+    for index, solution in enumerate(sol):
+        if index == 0:
+            continue
+
+        # compare the values (so excludes index 0 and -1) and check if the set of values already assigned exists in
+        #  the solutions
+        tracer((solution, new_sol), TRACE_LVL, 6)
+
+        # Exact solution already existing
+        if all((s == n for s, n in zip(solution[1:-1], new_sol[1:-1]))):
+            tracer(f"... Exact same solution already existing", TRACE_LVL, 3)
+            return
+        # Broader solution existing
+        if all((s == n for s, n in zip(solution[1:-1], new_sol[1:-1]) if s is not None)):
+            tracer(f"... Broader solution already existing", TRACE_LVL, 3)
+            return
+        # if the new solution is more general, replace the previous one
+        if all((s == n for s, n in zip(solution[1:-1], new_sol[1:-1]) if n is not None)):
+            tracer(f"... New solution is more broad", TRACE_LVL, 3)
+            sol[index] = new_sol
+            return
+
+    sol.append(new_sol)
+
+    tracer(f"Appended solution {sol[-1]}", TRACE_LVL, 2)
 
 
 # #######################################################################################
 # #################      recursively choose values of terms     #########################
-def rec_try_values(find_all, i_explored):
+def rec_try_values(find_all, val_keys):
     """
     choose a value of an unconstrained term and check satisfiability of the formula.
     if still neither True or False, recursively choose more terms
@@ -204,10 +232,13 @@ def rec_try_values(find_all, i_explored):
     """
     # todo remove i_explored, seems useless with the current implementation
 
+    if val_keys is None:
+        return
+
     global depth_n
     # tracer(f"=> Depth {depth_n}. Making a guess, i_explored={i_explored}", TRACE_LVL, 0)
 
-    for x in Term.values.keys():
+    for x in val_keys:
         # Save previous values to reset to previous state at the end
         previous_values = Term.values.copy()
         formula.reassign_terms_val()
@@ -216,15 +247,12 @@ def rec_try_values(find_all, i_explored):
         if Term.values[x] is not None:
             tracer(f"Term x[{x}]={Term.values[x]}, continuing", TRACE_LVL, 6)
             continue
-        # this x has already been decided in another previous loop
-        if x in i_explored:
-            # todo Never used ???
-            tracer(f"{x in i_explored}\t: {x} \tis in {i_explored}", TRACE_LVL, 1)
-            continue
 
-        tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}. {len(sol)-1} solutions so far (True and False)", TRACE_LVL, 0)
+        # Main tracer for all loops
+        tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}\t: {len(sol)-1} solutions so far (True and False)", TRACE_LVL, 0)
 
         for true_false in (True, False):
+            previous_values_2 = Term.values.copy()
             Term.values[x] = true_false
             formula.reassign_terms_val()
             tracer(f"Choosing x{x}={true_false}. Term.values = {Term.values}", TRACE_LVL, 1)
@@ -233,6 +261,8 @@ def rec_try_values(find_all, i_explored):
             already_checked = check_is_in_solutions()
             if already_checked:
                 tracer(f"**** Has already been tried in previous loops {Term.values}", TRACE_LVL, 5)
+                Term.values = previous_values_2
+                formula.reassign_terms_val()
                 continue
 
             # Then alright, let's apply it
@@ -248,12 +278,17 @@ def rec_try_values(find_all, i_explored):
             else:
                 depth_n += 1
                 tracer(f"Not Solved. Let's go to depth_n={depth_n}. Term.values = {Term.values}", TRACE_LVL, 3)
-                rec_try_values(find_all, [x] + i_explored)
+                next_val_keys = val_keys.copy()
+                next_val_keys.remove(x)
+                rec_try_values(find_all, next_val_keys)
                 depth_n -= 1
                 tracer(f"<- Coming back to one level above, depth={depth_n}", TRACE_LVL, 3)
                 # if just want to have the first solution, stop here.
                 if formula.solved is True and find_all is False:
                     return
+
+            Term.values = previous_values_2
+            formula.reassign_terms_val()
 
         Term.values = previous_values
         formula.reassign_terms_val()
@@ -298,7 +333,7 @@ def solver(cnf_file, find_all, set_trace):
     sol = [tuple(first_solution), ]
 
     # Launch the resolution
-    rec_try_values(find_all, [])
+    rec_try_values(find_all, list(Term.values.keys()))
 
     # todo: Need to remove duplicates in the solutions
 
