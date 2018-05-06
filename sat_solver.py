@@ -308,6 +308,7 @@ def solver(cnf_file, find_all, set_trace):
     tracer(f"\n{formula} \n", TRACE_LVL, 0)
     tracer(f"********************************************************************************", TRACE_LVL, 0)
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
+    pd.set_option('expand_frame_repr', False)
     pprint(sol[sol.solved == True])
     formula_satisfiable = len(sol[sol.solved == True])
     if formula_satisfiable > 0:
