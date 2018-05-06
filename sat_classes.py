@@ -44,8 +44,8 @@ class Formula:
         elif None in clauses_satis:
             self.solved = None
         else:
-            tracer(f"So the clause are satisfiable? Here: {clauses_satis}", TRACE_LVL, 4)
             self.solved = True
+        tracer(f"So the clauses are satisfiable? Here: {clauses_satis}", TRACE_LVL, 5)
         return self.solved
 
     def find_unique_terms(self):
