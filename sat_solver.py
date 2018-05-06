@@ -252,7 +252,7 @@ def rec_try_values(find_all, val_keys):
         tracer("="*(depth_n-1) + f"=> Depth {depth_n},\t x{x}\t: {len(sol)-1} solutions so far (True and False)", TRACE_LVL, 0)
 
         for true_false in (True, False):
-            previous_values_2 = Term.values.copy()
+            # previous_values_2 = Term.values.copy()
             Term.values[x] = true_false
             formula.reassign_terms_val()
             tracer(f"Choosing x{x}={true_false}. Term.values = {Term.values}", TRACE_LVL, 1)
@@ -261,8 +261,8 @@ def rec_try_values(find_all, val_keys):
             already_checked = check_is_in_solutions()
             if already_checked:
                 tracer(f"**** Has already been tried in previous loops {Term.values}", TRACE_LVL, 5)
-                Term.values = previous_values_2
-                formula.reassign_terms_val()
+                # Term.values = previous_values_2
+                # formula.reassign_terms_val()
                 continue
 
             # Then alright, let's apply it
@@ -287,8 +287,8 @@ def rec_try_values(find_all, val_keys):
                 if formula.solved is True and find_all is False:
                     return
 
-            Term.values = previous_values_2
-            formula.reassign_terms_val()
+            # Term.values = previous_values_2
+            # formula.reassign_terms_val()
 
         Term.values = previous_values
         formula.reassign_terms_val()
