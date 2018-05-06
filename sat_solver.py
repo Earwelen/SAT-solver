@@ -119,12 +119,11 @@ def recursive_sat_check():
                f"Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 3)
 
         formula.satisfiable()       # recheck all the clauses satisfiability
-        if formula.solved is False:
-            return False
-
-        implied_x = None
         # this might actually not help
         # implied_x = formula.find_unique_terms()
+        if formula.solved is not None:
+            return formula.solved
+        implied_x = None
 
         if implied_x is None:
             break
@@ -165,7 +164,7 @@ def check_is_in_solutions():
         # compare the values (so excludes index 0 and -1) and check if the set of values already assigned exists in
         #  the solutions
         tracer(tuple((s, a, "s, a, and s==a ", s == a) for s, a in zip(solution[1:-1], assigned_terms) if s is not None), TRACE_LVL, 3)
-        if all((s == a for s, a in zip(solution[1:-1], assigned_terms) if s is not None)):
+        if all((s == a for s, a in zip(solution[1:-1], assigned_terms) if a is not None)):
             nb_occurrences += 1
             # if no need to count, then exit
             break
@@ -231,9 +230,6 @@ def rec_try_values(find_all, val_keys):
     try to not recheck what has already been checked
     """
     # todo remove i_explored, seems useless with the current implementation
-
-    if val_keys is None:
-        return
 
     global depth_n
     # tracer(f"=> Depth {depth_n}. Making a guess, i_explored={i_explored}", TRACE_LVL, 0)
