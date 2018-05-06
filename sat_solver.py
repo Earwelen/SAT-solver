@@ -27,9 +27,8 @@
 # imports
 import argparse
 import os
-import pandas as pd
+import csv
 from time import time
-from collections import OrderedDict
 from pprint import pprint
 from ui import tracer
 from sat_classes import Term, Clause, Formula, set_tracing_lvl
@@ -42,7 +41,7 @@ TRACE_LVL = 1
 # formula Object with a list of Clauses composed of Terms
 formula = Formula()
 # todo describe this solutions holder
-sol = pd.DataFrame()
+sol = [()]
 """
 Sol Structure :
 
@@ -120,6 +119,9 @@ def recursive_sat_check():
                f"Still {unassigned_terms} undefined out of {formula.nb_terms}", TRACE_LVL, 3)
 
         formula.satisfiable()       # recheck all the clauses satisfiability
+        if formula.solved is False:
+            return False
+
         implied_x = formula.find_unique_terms()
 
         if implied_x is None:
@@ -151,25 +153,30 @@ def check_is_in_solutions():
     # todo search if any row has the same True / False, don't care about None values
     # todo: might need that for save_solutions_pd to avoid duplicates
 
-    assigned_terms = {f"x{k}": Term.values[k] for k in Term.values.keys() if Term.values[k] is not None}
+    assigned_terms = tuple(Term.values[k] for k in Term.values.keys())
+    # assigned_terms = (formula.solved,) + assigned_terms + (None,)
+    #  if Term.values[k] is not None
+
+    nb_occurrences = 0
+
+    for solution in sol:
+        # compare the values (so excludes index 0 and -1) and check if the set of values already assigned exists in
+        #  the solutions
+        if all((s == a for s, a in zip(solution[1:-1], assigned_terms) if s is not None)):
+            nb_occurrences += 1
+            # if no need to count, then exit
+            break
+    # tracer(f"This set of literals appears {nb_occurrences} times in the solutions", TRACE_LVL, 6)
 
     tracer(f"Current set of solutions", TRACE_LVL, 5)
     tracer(sol, TRACE_LVL, 5)
-    query = " and ".join([f"{k} == {assigned_terms[k]}" for k in assigned_terms.keys()])
-    tracer("Query is: " + query, TRACE_LVL, 7)
-
-    queried = sol.query(query)
-    tracer(queried, TRACE_LVL, 7)
-    nb_occurrences = len(queried)
-
-    tracer(f"This set of literals appears {nb_occurrences} times in the solutions", TRACE_LVL, 6)
 
     return True if nb_occurrences > 0 else False
 
 
 # #######################################################################################
 # #################      find all combinations of terms/values     ######################
-def save_solution_pd():
+def save_solution_list():
     """
     Save (append) the solution into pandas DataFrame
     """
@@ -177,14 +184,13 @@ def save_solution_pd():
 
     # todo check if there is not a broader set of solution. merge with it.
 
-    new_solution = OrderedDict({'solved': formula.solved})
+    new_solution = [formula.solved, ]
     for k in Term.values.keys():
-        new_solution[f"x{k}"] = Term.values[k]
-    # Avoid Overflow INT size.
-    new_solution['nb_unassigned_terms'] = Term.count_unassigned()
-    sol = sol.append(new_solution, ignore_index=True)
+        new_solution.append(Term.values[k])
+    new_solution.append(Term.count_unassigned())
+    sol = sol.append(tuple(new_solution))
 
-    tracer(f"Appended solution {new_solution}", TRACE_LVL, 7)
+    tracer(f"Appended solution {sol[-1]}", TRACE_LVL, 7)
 
 
 # #######################################################################################
@@ -235,7 +241,7 @@ def rec_try_values(find_all, i_explored):
                 tracer(f"*Solved={formula.solved}* -> adding solution n{len(sol)} if not redundant: "
                        f"Term.values = {Term.values}", TRACE_LVL, 2)
                 # Add the solution to the global variable
-                save_solution_pd()
+                save_solution_list()
                 # if just want to have the first solution, stop here.
                 if formula.solved is True and find_all is False:
                     return
@@ -285,11 +291,11 @@ def solver(cnf_file, find_all, set_trace):
     recursive_sat_check()
 
     # Initialize solutions
-    first_solution = OrderedDict({'solved': [formula.solved]})
+    first_solution = [formula.solved,]
     for k in sorted(Term.values.keys()):
-        first_solution[f"x{k}"] = [Term.values[k]]
-    first_solution['nb_unassigned_terms'] = Term.count_unassigned()
-    sol = pd.DataFrame(data=first_solution)
+        first_solution.append(Term.values[k])
+    first_solution.append(Term.count_unassigned())
+    sol = [tuple(first_solution), ]
 
     # Launch the resolution
     rec_try_values(find_all, [])
@@ -299,7 +305,11 @@ def solver(cnf_file, find_all, set_trace):
     # Save solutions
     # todo save sol.to_csv() every 5 seconds ?
     save_to = "cnf_formulas/Solutions/" + cnf_file.split('/')[-1].split('.')[0] + "-solved.csv"
-    sol.to_csv(save_to, sep=',')
+
+    with open(save_to, 'w') as csv_file:
+        csv_out = csv.writer(csv_file)
+        csv_out.writerows(sol)
+
     tracer(f"\n*** Solutions save to {save_to} ***", TRACE_LVL, 0)
 
     # End of the Solver
@@ -307,9 +317,12 @@ def solver(cnf_file, find_all, set_trace):
            f"\nEnd of the solving (hopefully). let's recap. The formula: ", TRACE_LVL, 0)
     tracer(f"\n{formula} \n", TRACE_LVL, 0)
     tracer(f"********************************************************************************", TRACE_LVL, 0)
+
+    # Solutions
+    true_sol = [s for s in sol if s[0] is True]
     tracer(f"\nSolutions : \n", TRACE_LVL, 0)
-    pprint(sol[sol.solved == True])
-    formula_satisfiable = len(sol[sol.solved == True])
+    pprint(true_sol)
+    formula_satisfiable = len(true_sol)
     if formula_satisfiable > 0:
         tracer(f"\nThe formula is satisfiable with AT LEAST {formula_satisfiable} solutions ", TRACE_LVL, 0)
     else:
